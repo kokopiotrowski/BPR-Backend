@@ -1,0 +1,107 @@
+openapi: 3.0.0
+info:
+  title: StockX - Bachelor Project
+  description: "This API is developed for a Bachelor Project Application named StockX.\
+    \ \n\n- It both projects current stock market data and works as a learning tool\
+    \ while doing fake stock trading.  \n\nAuthors of the project\n- Aleksander Stefan\
+    \ Bialik\n- Konrad Piotrowski \n"
+  contact:
+    email: 280053@via.dk
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+externalDocs:
+  description: "More information about this API here (open source code, docs)"
+  url: https://github.com/kokopiotrowski/BPR-Backend
+servers:
+- url: https://virtserver.swaggerhub.com/k0k0piotrowski/StockX/1.0.0
+  description: SwaggerHub API Auto Mocking for the testing reasons
+- url: http://ec2-3-8-48-95.eu-west-2.compute.amazonaws.com:3000
+  description: Real working server (development) - NOT YET AVAILABLE
+- url: http://ec2-3-8-48-95.eu-west-2.compute.amazonaws.com
+  description: Real working server (production) - NOT YET AVAILABLE
+tags:
+- name: Auth
+  description: Authentication and authorization related endpoints
+paths:
+  /auth/register:
+    post:
+      tags:
+      - Auth
+      summary: Register user
+      description: "By passing in appropriate options you will create a new user in\
+        \ DB. \nAfter confirming your account from email, use same credentials to\
+        \ login on /login endpoint\n"
+      operationId: registerUser
+      requestBody:
+        $ref: '#/components/requestBodies/RequestRegisterUser'
+      responses:
+        "200":
+          description: User registered - should receive a confirmation email
+        "400":
+          description: Bad input parameter
+        "500":
+          description: Internal server error
+  /auth/login:
+    post:
+      tags:
+      - Auth
+      summary: Login
+      description: "By passing in the proper object user should be logged in into\
+        \ his account.\nIt basically means that \n"
+      operationId: loginUser
+      responses:
+        "200":
+          description: User Logged in
+          headers:
+            Authorization:
+              description: Token which is required to be used with ANY account related
+                operations/endpoints
+              style: simple
+              explode: false
+              schema:
+                type: string
+        "400":
+          description: Bad input parameter
+        "401":
+          description: Failed to login
+        "500":
+          description: Internal server error
+  /user/settings:
+    get:
+      tags:
+      - User
+      summary: Get user settings
+      description: "Returns an object with all user information and settings. \n"
+      responses:
+        "200":
+          description: OK - settings returned correctly
+        "400":
+          description: Bad input parameter
+        "401":
+          description: Unauthenticated
+        "500":
+          description: Internal server error
+components:
+  schemas:
+    RegisterUser:
+      required:
+      - email
+      - password
+      type: object
+      properties:
+        email:
+          type: string
+          example: email@domain.com
+        password:
+          type: string
+          example: securepassword
+  requestBodies:
+    RequestRegisterUser:
+      description: A JSON object containing user registration info
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RegisterUser'
+      required: true
