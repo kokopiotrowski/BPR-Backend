@@ -1,26 +1,16 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"./network"
 )
 
 func main() {
-	r := mux.NewRouter()
-	r.HandleFunc("/", HomeHandler)
-	http.Handle("/", r)
-	fmt.Print("Server running")
+	log.Printf("Server started")
 
-	if err := http.ListenAndServe(":8080", r); err != nil {
-		panic(err)
-	}
-}
+	router := network.NewRouter()
 
-func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	_, err := w.Write([]byte("Siema, tu Konrad :)"))
-	if err != nil {
-		panic(err)
-	}
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
