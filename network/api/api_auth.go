@@ -2,14 +2,14 @@ package api
 
 import (
 	"net/http"
+
+	"../../util"
 )
 
 func LoginUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	util.RespondWithJSON(w, r, http.StatusOK, "User login", nil)
 }
 
 func RegisterUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	util.RespondWithJSON(w, r, http.StatusOK, "User register", nil)
 }

@@ -144,7 +144,7 @@ func RespondWithJSON(w http.ResponseWriter, r *http.Request, code int, output in
 }
 
 func SendJSON(ctx context.Context, w http.ResponseWriter, status int, output interface{}, headers ...string) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
 	b, err := json.Marshal(output)
 	v := GetValue(ctx)
