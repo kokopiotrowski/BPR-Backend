@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"path"
 	"reflect"
+	"stockx-backend/reserr"
 	"strconv"
 	"strings"
 	"time"
@@ -20,8 +21,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/logrusorgru/aurora"
 	"github.com/rs/xid"
-
-	"../reserr"
 )
 
 type Value struct {

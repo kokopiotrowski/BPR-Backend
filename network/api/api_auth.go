@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"../../util"
+	"stockx-backend/util"
 )
 
 func LoginUser(w http.ResponseWriter, r *http.Request) {

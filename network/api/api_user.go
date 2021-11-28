@@ -2,8 +2,7 @@ package api
 
 import (
 	"net/http"
-
-	"../../util"
+	"stockx-backend/util"
 )
 
 func UserSettingsGet(w http.ResponseWriter, r *http.Request) {

@@ -2,13 +2,12 @@ package network
 
 import (
 	"net/http"
+	"stockx-backend/logger"
+	"stockx-backend/network/api"
+	"stockx-backend/util"
 	"strings"
 
 	"github.com/gorilla/mux"
-
-	"../logger"
-	"../util"
-	"./api"
 )
 
 type Route struct {
