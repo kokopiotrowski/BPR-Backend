@@ -1,18 +1,57 @@
 package conf
 
-import "flag"
+import (
+	"fmt"
 
-type Configuration struct {
-	IsProduction bool
+	"github.com/spf13/viper"
+)
+
+type Configurations struct {
+	Server ServerConfigurations
+	Email  EmailConfigurations
 }
 
-func Init() (*Configuration, error) {
+type ServerConfigurations struct {
+	ProdPort string
+	DevPort  string
+}
 
-	conf := Configuration{}
+type EmailConfigurations struct {
+	EmailAddress string
+	Password     string
+}
 
-	flag.BoolVar(&conf.IsProduction, "prod", false, "Set to define that this build is official production server")
+var (
+	Conf Configurations
+)
 
-	flag.Parse()
+func ReadConfig() (*Configurations, error) {
+	viper.SetConfigName("config")
+	viper.AddConfigPath(".")
+	viper.AutomaticEnv()
+	viper.SetConfigType("yml")
 
-	return &conf, nil
+	var configuration Configurations
+
+	if err := viper.ReadInConfig(); err != nil {
+		return nil, err
+	}
+
+	// Set undefined variables
+	viper.SetDefault("database.dbname", "test_db")
+
+	err := viper.Unmarshal(&configuration)
+	if err != nil {
+		fmt.Printf("Unable to decode into struct, %v", err)
+	}
+
+	// Reading variables using the model
+	fmt.Println("Reading variables using the model..")
+	fmt.Println("Production port is\t", configuration.Server.ProdPort)
+	fmt.Println("Development port is\t\t", configuration.Server.DevPort)
+	fmt.Println("Email address is\t", configuration.Email.EmailAddress)
+
+	Conf = configuration
+
+	return &configuration, nil
 }

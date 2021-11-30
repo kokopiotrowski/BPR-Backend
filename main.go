@@ -4,26 +4,37 @@ import (
 	"log"
 	"net/http"
 	"stockx-backend/conf"
+	"stockx-backend/db"
 	"stockx-backend/network"
-)
 
-const (
-	ProductionPort = ":80"
-	DevPort        = ":3000"
+	"github.com/rs/cors"
 )
 
 func main() {
-	co, err := conf.Init()
+	flags, err := conf.ParseFlags()
 	if err != nil {
 		panic(1)
 	}
 
-	log.Printf("Server started")
+	config, err := conf.ReadConfig()
+	if err != nil {
+		panic(1)
+	}
+
+	db.InitDB(flags.IsProduction)
+
+	if flags.IsProduction {
+		log.Printf("PRODUCTION Server started on port %v", config.Server.ProdPort)
+	} else {
+		log.Printf("DEV Server started on port %v", config.Server.DevPort)
+	}
 
 	router := network.NewRouter()
-	if co.IsProduction {
-		log.Fatal(http.ListenAndServe(ProductionPort, router))
+	handler := cors.AllowAll().Handler(router)
+
+	if flags.IsProduction {
+		log.Fatal(http.ListenAndServe(config.Server.ProdPort, handler))
 	} else {
-		log.Fatal(http.ListenAndServe(DevPort, router))
+		log.Fatal(http.ListenAndServe(config.Server.DevPort, handler))
 	}
 }

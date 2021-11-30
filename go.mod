@@ -8,6 +8,8 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/jinzhu/gorm v1.9.16
 	github.com/logrusorgru/aurora v2.0.3+incompatible
+	github.com/rs/cors v1.8.0 // indirect
 	github.com/rs/xid v1.3.0
+	github.com/spf13/viper v1.9.0 // indirect
 	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871
 )

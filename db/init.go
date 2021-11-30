@@ -10,7 +10,6 @@ import (
 
 func InitDB(isProd bool) {
 	names := listCreatedTables()
-
 	fmt.Println(names)
 }
 
@@ -21,10 +20,6 @@ func listCreatedTables() []string {
 
 	// Create DynamoDB client
 	svc := dynamodb.New(sess)
-	// snippet-end:[dynamodb.go.list_tables.session]
-
-	// snippet-start:[dynamodb.go.list_tables.call]
-	// create the input configuration instance
 	input := &dynamodb.ListTablesInput{}
 
 	var tableNames = []string{}

@@ -1,11 +1,12 @@
 package auth
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
+	"stockx-backend/db"
+	"stockx-backend/db/models"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -36,7 +37,7 @@ func hashPassword(password string) (string, error) {
 	return string(bytes), err
 }
 
-func RegisterUser(db *sql.DB, register Register) (bool, error) {
+func RegisterUser(register Register) (bool, error) {
 	var validUsername = regexp.MustCompile("^[a-zA-Z0-9]*[-]?[a-zA-Z0-9]*$")
 
 	if !validUsername.MatchString(register.Username) {
@@ -48,43 +49,36 @@ func RegisterUser(db *sql.DB, register Register) (bool, error) {
 		return false, err
 	}
 
-	query := "INSERT INTO Users(Username, Pass) VALUES (?, ?)"
+	newUser := models.User{
+		Username: register.Username,
+		Email:    register.Email,
+		Password: hashedPass,
+	}
 
-	tx, err := db.Begin()
-
+	err = db.PutItemInTable(newUser, "User")
 	if err != nil {
 		return false, err
 	}
 
-	_, err = tx.Exec(query, register.Username, hashedPass)
-
-	if err != nil {
-		return false, err
-	}
-
-	if err = tx.Commit(); err != nil {
-		return false, err
-	}
+	// email.SendConfirmRegistrationEmail(register.Email, conf.Conf.Email)
 
 	return true, nil
 }
 
-func LogIn(db *sql.DB, login Credentials) (Token, error) {
-	var userID uint64
+func LogIn(login Credentials) (Token, error) {
+	var username string
 
-	var username, hashedPassDB string
-
-	err := db.QueryRow("SELECT UserId, Username, Pass FROM Users WHERE Username=?", login.Username).Scan(&userID, &username, &hashedPassDB)
+	user, err := db.GetUserFromTable(login.Username)
 
 	if err != nil {
-		return Token{}, errors.New("could not login - didn't find user with this username")
+		return Token{}, err
 	}
 
-	if !comparePasswords(hashedPassDB, []byte(login.Password)) {
+	if !comparePasswords(user.Password, []byte(login.Password)) {
 		return Token{}, errors.New("could not login - incorrect password")
 	}
 
-	token, err := CreateToken(userID, username)
+	token, err := CreateToken(username)
 	if err != nil {
 		return Token{}, errors.New("could not generate token")
 	}
@@ -107,12 +101,12 @@ func comparePasswords(hashedPwd string, plainPwd []byte) bool {
 	return true
 }
 
-func CreateToken(userID uint64, username string) (string, error) {
+func CreateToken(username string) (string, error) {
 	var err error
 
 	atClaims := jwt.MapClaims{}
 	atClaims["authorized"] = true
-	atClaims["user_id"] = userID
+	atClaims["username"] = username
 
 	atClaims["exp"] = time.Now().Add(time.Minute * 300).Unix()
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
@@ -159,7 +153,7 @@ func ExtractToken(r *http.Request) string {
 	return bearToken
 }
 
-func GetUserIDFromToken(r *http.Request) (int64, error) {
+func GetUsernameFromToken(r *http.Request) (string, error) {
 	tokenString := ExtractToken(r)
 	claims := jwt.MapClaims{}
 	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
@@ -167,8 +161,8 @@ func GetUserIDFromToken(r *http.Request) (int64, error) {
 	})
 
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	return int64(claims["user_id"].(float64)), nil
+	return claims["username"].(string), nil
 }
