@@ -4,9 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/mail"
 	"regexp"
+	"stockx-backend/conf"
 	"stockx-backend/db"
 	"stockx-backend/db/models"
+	"stockx-backend/email"
+	"stockx-backend/reserr"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -20,7 +24,7 @@ type Register struct {
 }
 
 type Credentials struct {
-	Username string `json:"username"` //can be also email
+	Email    string `json:"email"` //can be also email
 	Password string `json:"password"`
 }
 
@@ -29,7 +33,7 @@ const (
 )
 
 type Token struct {
-	Token string `json:"token"`
+	Token string `json:"authorization"`
 }
 
 func hashPassword(password string) (string, error) {
@@ -41,7 +45,11 @@ func RegisterUser(register Register) (bool, error) {
 	var validUsername = regexp.MustCompile("^[a-zA-Z0-9]*[-]?[a-zA-Z0-9]*$")
 
 	if !validUsername.MatchString(register.Username) {
-		return false, errors.New("invalid username. Should contain 5-20 characters")
+		return false, reserr.BadRequest("invalid username", errors.New("username constains not accepted symbols"), "")
+	}
+
+	if _, err := mail.ParseAddress(register.Email); err != nil {
+		return false, reserr.BadRequest("invalid email", err, "")
 	}
 
 	hashedPass, err := hashPassword(register.Password)
@@ -57,10 +65,12 @@ func RegisterUser(register Register) (bool, error) {
 
 	err = db.PutItemInTable(newUser, "User")
 	if err != nil {
-		return false, err
+		return false, reserr.Internal("db error", err, "failed to save newly registered user in database")
 	}
 
-	// email.SendConfirmRegistrationEmail(register.Email, conf.Conf.Email)
+	if err = email.SendConfirmRegistrationEmail(register.Email, conf.Conf.Email); err != nil {
+		return false, reserr.Internal("email not sent", err, "failed to send registration email")
+	}
 
 	return true, nil
 }
@@ -68,7 +78,7 @@ func RegisterUser(register Register) (bool, error) {
 func LogIn(login Credentials) (Token, error) {
 	var username string
 
-	user, err := db.GetUserFromTable(login.Username)
+	user, err := db.GetUserFromTable(login.Email)
 
 	if err != nil {
 		return Token{}, err

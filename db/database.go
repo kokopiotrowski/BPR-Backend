@@ -3,8 +3,9 @@ package db
 import (
 	"fmt"
 	"log"
-	"regexp"
+	"net/mail"
 	"stockx-backend/db/models"
+	"stockx-backend/reserr"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -82,7 +83,7 @@ func UpdateItemInTable() error {
 	return nil
 }
 
-func GetUserFromTable(usernameOrEmail string) (models.User, error) {
+func GetUserFromTable(email string) (models.User, error) {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
@@ -90,36 +91,26 @@ func GetUserFromTable(usernameOrEmail string) (models.User, error) {
 	// Create DynamoDB client
 	svc := dynamodb.New(sess)
 
-	var validUsername = regexp.MustCompile("^[a-zA-Z0-9]*[-]?[a-zA-Z0-9]*$")
-
 	var result *dynamodb.GetItemOutput
 
 	var err error
 
 	tableName := "User"
 
-	if validUsername.MatchString(usernameOrEmail) {
-		result, err = svc.GetItem(&dynamodb.GetItemInput{
-			TableName: aws.String(tableName),
-			Key: map[string]*dynamodb.AttributeValue{
-				"username": {
-					S: aws.String(usernameOrEmail),
-				},
-			},
-		})
-	} else {
+	if _, err = mail.ParseAddress(email); err == nil {
 		result, err = svc.GetItem(&dynamodb.GetItemInput{
 			TableName: aws.String(tableName),
 			Key: map[string]*dynamodb.AttributeValue{
 				"email": {
-					S: aws.String(usernameOrEmail),
+					S: aws.String(email),
 				},
 			},
 		})
-	}
-
-	if err != nil {
-		return models.User{}, err
+		if err != nil {
+			return models.User{}, err
+		}
+	} else {
+		return models.User{}, reserr.NotFound("invalid email", err, "email did not pass regex")
 	}
 
 	if result.Item == nil {

@@ -7,18 +7,23 @@ import (
 )
 
 type Configurations struct {
-	Server ServerConfigurations
-	Email  EmailConfigurations
+	Server   ServerConfigurations   `yaml:"server"`
+	Email    EmailConfigurations    `yaml:"email"`
+	StockAPI StockAPIConfigurations `yaml:"stockapi"`
 }
 
 type ServerConfigurations struct {
-	ProdPort string
-	DevPort  string
+	ProdPort string `yaml:"prodPort"`
+	DevPort  string `yaml:"devPort"`
 }
 
 type EmailConfigurations struct {
-	EmailAddress string
-	Password     string
+	EmailAddress string `yaml:"emailAddress"`
+	Password     string `yaml:"password"`
+}
+
+type StockAPIConfigurations struct {
+	Key string `yaml:"key"`
 }
 
 var (
@@ -29,7 +34,7 @@ func ReadConfig() (*Configurations, error) {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	viper.AutomaticEnv()
-	viper.SetConfigType("yml")
+	viper.SetConfigType("yaml")
 
 	var configuration Configurations
 

@@ -16,7 +16,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		util.RespondWithJSON(w, r, http.StatusOK, `{"Authorization":"`+token.Token+`"}`, nil)
+		util.RespondWithJSON(w, r, http.StatusOK, token, nil)
 
 		return
 	}
@@ -33,7 +33,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		util.RespondWithJSON(w, r, http.StatusOK, "User registered - check email", nil)
+		util.RespondWithJSON(w, r, http.StatusOK, "User registered - check provided email", nil)
 
 		return
 	}

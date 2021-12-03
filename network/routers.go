@@ -69,4 +69,11 @@ var routes = Routes{
 		"/user/settings",
 		api.UserSettingsGet,
 	},
+
+	Route{
+		"GetNews",
+		strings.ToUpper("Get"),
+		"/news",
+		api.GetNews,
+	},
 }

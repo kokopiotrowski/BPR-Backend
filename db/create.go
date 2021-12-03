@@ -30,22 +30,14 @@ func createUserTable() {
 	input := &dynamodb.CreateTableInput{
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
-				AttributeName: aws.String("username"),
-				AttributeType: aws.String("S"),
-			},
-			{
 				AttributeName: aws.String("email"),
 				AttributeType: aws.String("S"),
 			},
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
 			{
-				AttributeName: aws.String("username"),
-				KeyType:       aws.String("HASH"),
-			},
-			{
 				AttributeName: aws.String("email"),
-				KeyType:       aws.String("RANGE"),
+				KeyType:       aws.String("HASH"),
 			},
 		},
 		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
@@ -84,7 +76,7 @@ func createLogTable() {
 
 	_, err := svc.CreateTable(input)
 	if err != nil {
-		log.Fatalf("Got error calling CreateTable: %s", err)
+		log.Fatalf("Got error calling CreateTable Log: %s", err)
 	}
 
 	fmt.Println("Created the table", tableName)

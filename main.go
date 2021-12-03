@@ -5,8 +5,10 @@ import (
 	"net/http"
 	"stockx-backend/conf"
 	"stockx-backend/db"
+	"stockx-backend/external/stockapi"
 	"stockx-backend/network"
 
+	"github.com/Finnhub-Stock-API/finnhub-go/v2"
 	"github.com/rs/cors"
 )
 
@@ -20,6 +22,9 @@ func main() {
 	if err != nil {
 		panic(1)
 	}
+
+	stockapi.FinnhubConfiguration = finnhub.NewConfiguration()
+	stockapi.FinnhubConfiguration.AddDefaultHeader("X-Finnhub-Token", config.StockAPI.Key)
 
 	db.InitDB(flags.IsProduction)
 

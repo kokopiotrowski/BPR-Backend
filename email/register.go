@@ -20,14 +20,16 @@ func SendConfirmRegistrationEmail(recipient string, emailConfig conf.EmailConfig
 	smtpHost := "smtp.gmail.com"
 	smtpPort := "587"
 
-	// Message.
-	message := []byte("Hello bro, you registered your account, congrats to you")
+	msg := []byte("From: " + emailConfig.EmailAddress + "\r\n" +
+		"To: " + recipient + "\r\n" +
+		"Subject: STOCKX - Confirm your account\r\n\r\n" +
+		"No słuchaj byku, gratuluję, zarejestrowałeś się. STONKS!\r\n")
 
 	// Authentication.
 	auth := smtp.PlainAuth("", from, password, smtpHost)
 
 	// Sending email.
-	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
+	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, msg)
 	if err != nil {
 		return err
 	}
