@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"log"
 	"net/mail"
 	"stockx-backend/db/models"
@@ -41,7 +40,7 @@ func PutItemInTable(item interface{}, tableName string) error {
 	return nil
 }
 
-func UpdateItemInTable() error {
+func UpdateUsersPassword(useremail, hashedPass string) error {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
@@ -49,36 +48,27 @@ func UpdateItemInTable() error {
 	// Create DynamoDB client
 	svc := dynamodb.New(sess)
 	// Update item in table Movies
-	tableName := "Movies"
-	movieName := "The Big New Movie"
-	movieYear := "2015"
-	movieRating := "0.5"
 
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":r": {
-				N: aws.String(movieRating),
+			":c": {
+				S: aws.String(hashedPass),
 			},
 		},
-		TableName: aws.String(tableName),
+		TableName: aws.String("User"),
 		Key: map[string]*dynamodb.AttributeValue{
-			"Year": {
-				N: aws.String(movieYear),
-			},
-			"Title": {
-				S: aws.String(movieName),
+			"email": {
+				S: aws.String(useremail),
 			},
 		},
 		ReturnValues:     aws.String("UPDATED_NEW"),
-		UpdateExpression: aws.String("set Rating = :r"),
+		UpdateExpression: aws.String("set password = :r"),
 	}
 
 	_, err := svc.UpdateItem(input)
 	if err != nil {
 		log.Fatalf("Got error calling UpdateItem: %s", err)
 	}
-
-	fmt.Println("Successfully updated '" + movieName + "' (" + movieYear + ") rating to " + movieRating)
 
 	return nil
 }

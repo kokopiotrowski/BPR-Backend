@@ -13,8 +13,10 @@ type Configurations struct {
 }
 
 type ServerConfigurations struct {
-	ProdPort string `yaml:"prodPort"`
-	DevPort  string `yaml:"devPort"`
+	ProdPort       string `yaml:"prodPort"`
+	DevPort        string `yaml:"devPort"`
+	SSLKey         string `yaml:"sslkey"`
+	SSLCertificate string `yaml:"sslcert"`
 }
 
 type EmailConfigurations struct {
@@ -51,10 +53,7 @@ func ReadConfig() (*Configurations, error) {
 	}
 
 	// Reading variables using the model
-	fmt.Println("Reading variables using the model..")
-	fmt.Println("Production port is\t", configuration.Server.ProdPort)
-	fmt.Println("Development port is\t\t", configuration.Server.DevPort)
-	fmt.Println("Email address is\t", configuration.Email.EmailAddress)
+	fmt.Println("Configuration read.")
 
 	Conf = configuration
 

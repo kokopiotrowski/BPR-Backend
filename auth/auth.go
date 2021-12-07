@@ -85,7 +85,7 @@ func LogIn(login Credentials) (Token, error) {
 	}
 
 	if !comparePasswords(user.Password, []byte(login.Password)) {
-		return Token{}, errors.New("could not login - incorrect password")
+		return Token{}, reserr.Forbidden("Failed to login", errors.New("failed to login"), "incorrect password")
 	}
 
 	token, err := CreateToken(username)

@@ -45,8 +45,15 @@ var routes = Routes{
 	Route{
 		"Index",
 		"GET",
-		"",
+		"/index",
 		Index,
+	},
+
+	Route{
+		"Websocket",
+		strings.ToUpper("Get"),
+		"/ws",
+		api.WsEndpoint,
 	},
 
 	Route{
@@ -68,6 +75,34 @@ var routes = Routes{
 		strings.ToUpper("Get"),
 		"/user/settings",
 		api.UserSettingsGet,
+	},
+
+	Route{
+		"GetStockSymbols",
+		strings.ToUpper("Get"),
+		"/stock/symbols", // form values - q(string)
+		api.GetStockSymbols,
+	},
+
+	Route{
+		"GetCandlesOfStocks",
+		strings.ToUpper("Get"),
+		"/stock/candles", // form values - symbol(string)
+		api.GetStockCandles,
+	},
+
+	Route{
+		"GetCompanyInfo",
+		strings.ToUpper("Get"),
+		"/stock/company/info", // form values - symbol(string)
+		api.GetCompanyInfo,
+	},
+
+	Route{
+		"GetCurrentStockPrice",
+		strings.ToUpper("Get"),
+		"/stock/current", // form values - symbol(string)
+		api.GetCurrentStockPrice,
 	},
 
 	Route{

@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.42.13
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/jinzhu/gorm v1.9.16
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/rs/cors v1.8.0 // indirect

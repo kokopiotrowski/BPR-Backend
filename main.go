@@ -7,6 +7,7 @@ import (
 	"stockx-backend/db"
 	"stockx-backend/external/stockapi"
 	"stockx-backend/network"
+	"time"
 
 	"github.com/Finnhub-Stock-API/finnhub-go/v2"
 	"github.com/rs/cors"
@@ -37,9 +38,18 @@ func main() {
 	router := network.NewRouter()
 	handler := cors.AllowAll().Handler(router)
 
+	go listenToLivedata(config.StockAPI.Key)
+
 	if flags.IsProduction {
 		log.Fatal(http.ListenAndServe(config.Server.ProdPort, handler))
 	} else {
 		log.Fatal(http.ListenAndServe(config.Server.DevPort, handler))
+	}
+}
+
+func listenToLivedata(token string) {
+	for {
+		stockapi.StartListening(token)
+		time.Sleep(5000)
 	}
 }
