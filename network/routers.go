@@ -78,6 +78,20 @@ var routes = Routes{
 	},
 
 	Route{
+		"UserSettingsDelete",
+		strings.ToUpper("Delete"),
+		"/user/settings/delete",
+		api.UserDelete,
+	},
+
+	Route{
+		"UserUpdatePassword",
+		strings.ToUpper("Post"),
+		"/user/settings/password",
+		api.UserChangePassword,
+	},
+
+	Route{
 		"GetStockSymbols",
 		strings.ToUpper("Get"),
 		"/stock/symbols", // form values - q(string)
@@ -103,6 +117,33 @@ var routes = Routes{
 		strings.ToUpper("Get"),
 		"/stock/current", // form values - symbol(string)
 		api.GetCurrentStockPrice,
+	},
+
+	Route{
+		"BuyStockLong",
+		strings.ToUpper("Post"),
+		"/stock/long/buy",
+		api.BuyStockLong,
+	},
+
+	Route{
+		"SellStockLong",
+		strings.ToUpper("Post"),
+		"/stock/long/sell",
+		api.SellStockLong,
+	},
+
+	Route{
+		"BuyStockShort",
+		strings.ToUpper("Post"),
+		"/stock/short/sell",
+		api.BuyStockShort,
+	},
+	Route{
+		"BuyStockLong",
+		strings.ToUpper("Post"),
+		"/stock/short/cover",
+		api.BuyToCover,
 	},
 
 	Route{

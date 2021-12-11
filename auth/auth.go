@@ -11,6 +11,7 @@ import (
 	"stockx-backend/db/models"
 	"stockx-backend/email"
 	"stockx-backend/reserr"
+	"stockx-backend/util"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -36,7 +37,7 @@ type Token struct {
 	Token string `json:"authorization"`
 }
 
-func hashPassword(password string) (string, error) {
+func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	return string(bytes), err
 }
@@ -52,43 +53,68 @@ func RegisterUser(register Register) (bool, error) {
 		return false, reserr.BadRequest("invalid email", err, "")
 	}
 
-	hashedPass, err := hashPassword(register.Password)
+	hashedPass, err := HashPassword(register.Password)
 	if err != nil {
 		return false, err
 	}
 
-	newUser := models.User{
-		Username: register.Username,
-		Email:    register.Email,
-		Password: hashedPass,
+	loc, err := time.LoadLocation("Europe/Copenhagen")
+	if err != nil {
+		return false, err
 	}
 
-	err = db.PutItemInTable(newUser, "User")
+	dt := time.Now().In(loc)
+
+	newUser := models.User{
+		Email:       register.Email,
+		Username:    register.Username,
+		Password:    hashedPass,
+		DateCreated: dt.Format("01-02-2006 15:04:05"),
+	}
+
+	err = db.PutUserInTheTable(newUser, "User")
 	if err != nil {
 		return false, reserr.Internal("db error", err, "failed to save newly registered user in database")
 	}
 
-	if err = email.SendConfirmRegistrationEmail(register.Email, conf.Conf.Email); err != nil {
-		return false, reserr.Internal("email not sent", err, "failed to send registration email")
+	err = db.PutTradesInTheTable(newUser.Email, models.Trades{
+		Email:         newUser.Email,
+		Credits:       models.DefaultAmountOfCreditsForNewUsers,
+		BoughtStocks:  []models.BoughtStock{},
+		SoldStocks:    []models.SoldStock{},
+		ShortStocks:   []models.ShortStock{},
+		BoughtToCover: []models.BoughtToCover{},
+	})
+	if err != nil {
+		return false, reserr.Internal("db error", err, "failed to add new trades for newly registered user in database")
 	}
 
-	return true, nil
+	err = db.PutStatisticsInTheTable(newUser.Email, models.Statistics{
+		Email: newUser.Email,
+	})
+	if err != nil {
+		return false, reserr.Internal("db error", err, "failed to begin tracking statistics for newly registered user in database")
+	}
+
+	go func() {
+		err = email.SendConfirmRegistrationEmail(register.Email, conf.Conf.Email)
+	}()
+
+	return true, err
 }
 
 func LogIn(login Credentials) (Token, error) {
-	var username string
-
 	user, err := db.GetUserFromTable(login.Email)
 
 	if err != nil {
 		return Token{}, err
 	}
 
-	if !comparePasswords(user.Password, []byte(login.Password)) {
+	if !ComparePasswords(user.Password, []byte(login.Password)) {
 		return Token{}, reserr.Forbidden("Failed to login", errors.New("failed to login"), "incorrect password")
 	}
 
-	token, err := CreateToken(username)
+	token, err := CreateToken(user.Email)
 	if err != nil {
 		return Token{}, errors.New("could not generate token")
 	}
@@ -100,7 +126,39 @@ func LogIn(login Credentials) (Token, error) {
 	return returnToken, nil
 }
 
-func comparePasswords(hashedPwd string, plainPwd []byte) bool {
+func GetUserEmailFromRequest(w http.ResponseWriter, r *http.Request) (string, error) {
+	err := TokenValid(r)
+	if err != nil {
+		return "", err
+	}
+
+	u, err := GetEmailFromToken(r)
+	if err != nil {
+		return "", err
+	}
+
+	return u, nil
+}
+
+func CheckIfAuthorized(w http.ResponseWriter, r *http.Request, email *string) bool { //email, error
+	err := TokenValid(r)
+	if err != nil {
+		util.RespondWithJSON(w, r, http.StatusUnauthorized, "Could not retrieve user id from token", nil)
+		return false
+	}
+
+	u, err := GetEmailFromToken(r)
+	if err != nil {
+		util.RespondWithJSON(w, r, http.StatusUnauthorized, "Could not retrieve user id from token", nil)
+		return false
+	}
+
+	*email = u
+
+	return true
+}
+
+func ComparePasswords(hashedPwd string, plainPwd []byte) bool {
 	// Since we'll be getting the hashed password from the DB it
 	// will be a string so we'll need to convert it to a byte slice
 	byteHash := []byte(hashedPwd)
@@ -111,12 +169,12 @@ func comparePasswords(hashedPwd string, plainPwd []byte) bool {
 	return true
 }
 
-func CreateToken(username string) (string, error) {
+func CreateToken(email string) (string, error) {
 	var err error
 
 	atClaims := jwt.MapClaims{}
 	atClaims["authorized"] = true
-	atClaims["username"] = username
+	atClaims["email"] = email
 
 	atClaims["exp"] = time.Now().Add(time.Minute * 300).Unix()
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
@@ -163,7 +221,7 @@ func ExtractToken(r *http.Request) string {
 	return bearToken
 }
 
-func GetUsernameFromToken(r *http.Request) (string, error) {
+func GetEmailFromToken(r *http.Request) (string, error) {
 	tokenString := ExtractToken(r)
 	claims := jwt.MapClaims{}
 	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
@@ -174,5 +232,5 @@ func GetUsernameFromToken(r *http.Request) (string, error) {
 		return "", err
 	}
 
-	return claims["username"].(string), nil
+	return claims["email"].(string), nil
 }

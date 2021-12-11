@@ -12,6 +12,18 @@ func Logger(inner http.Handler, name string) http.Handler {
 
 		inner.ServeHTTP(w, r)
 
+		// var email string
+		// if auth.CheckIfAuthorized(w, r, &email) {
+		// 	log.Printf(
+		// 		"%s %s %s %s %s",
+		// 		r.Method,
+		// 		email,
+		// 		r.RequestURI,
+		// 		name,
+		// 		time.Since(start),
+		// 	)
+		// } else
+
 		if r.RequestURI != "/index" {
 			log.Printf(
 				"%s %s %s %s",

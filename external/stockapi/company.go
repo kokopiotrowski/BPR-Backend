@@ -68,7 +68,7 @@ func GetCompanyInfo(symbol string) (CompanyInfo, error) {
 	return CompanyInfo{CurrentStock: currentStockInfo, Profile: companyProfile, News: companyNews}, nil
 }
 
-func getQuoteForSymbol(symbol string) (finnhub.Quote, error) {
+func GetQuoteForSymbol(symbol string) (finnhub.Quote, error) {
 	finnhubClient := finnhub.NewAPIClient(FinnhubConfiguration).DefaultApi
 
 	currentStockInfo, _, err := finnhubClient.Quote(context.Background()).Symbol(symbol).Execute()

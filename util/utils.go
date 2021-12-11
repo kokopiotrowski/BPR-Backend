@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"context"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -678,4 +679,23 @@ func ConvertJSONToRequestBody(data interface{}) (io.Reader, error) {
 	}
 
 	return bytes.NewReader(b), nil
+}
+
+func EncodeToBytes(item interface{}) ([]byte, error) {
+	buf := bytes.Buffer{}
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(item)
+
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func DecodeToObject(s []byte, object *interface{}) error {
+	dec := gob.NewDecoder(bytes.NewReader(s))
+	err := dec.Decode(object)
+
+	return err
 }
