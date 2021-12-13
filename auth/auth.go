@@ -84,6 +84,8 @@ func RegisterUser(register Register) (bool, error) {
 		SoldStocks:    []models.SoldStock{},
 		ShortStocks:   []models.ShortStock{},
 		BoughtToCover: []models.BoughtToCover{},
+		HoldLong:      []models.HoldLong{},
+		HoldShort:     []models.HoldShort{},
 	})
 	if err != nil {
 		return false, reserr.Internal("db error", err, "failed to add new trades for newly registered user in database")
@@ -94,6 +96,18 @@ func RegisterUser(register Register) (bool, error) {
 	})
 	if err != nil {
 		return false, reserr.Internal("db error", err, "failed to begin tracking statistics for newly registered user in database")
+	}
+
+	registeredUsers, err := db.GetListOfRegisteredUsers()
+	if err != nil {
+		return false, reserr.Internal("db error", err, "Failed to add user to list of users")
+	}
+
+	registeredUsers.Users = append(registeredUsers.Users, newUser.Email)
+
+	err = db.PutListOfRegisteredUsersInTheTable(registeredUsers)
+	if err != nil {
+		return false, reserr.Internal("db error", err, "Failed to add user to list of users")
 	}
 
 	go func() {

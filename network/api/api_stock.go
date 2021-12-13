@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"stockx-backend/auth"
 	"stockx-backend/external/stockapi"
+	"stockx-backend/stock"
 	"stockx-backend/util"
 )
 
@@ -43,12 +44,12 @@ func GetCurrentStockPrice(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func GetCompanyInfo(w http.ResponseWriter, r *http.Request) {
-	var username string
-	if auth.CheckIfAuthorized(w, r, &username) {
+func GetSymbolInfo(w http.ResponseWriter, r *http.Request) {
+	var email string
+	if auth.CheckIfAuthorized(w, r, &email) {
 		var symbol string
 		if util.DecodeFormValueAsString(w, r, "symbol", &symbol) {
-			companyInfo, err := stockapi.GetCompanyInfo(symbol)
+			companyInfo, err := stock.GetSymbolInfo(email, symbol)
 			if err != nil {
 				util.RespondWithJSON(w, r, http.StatusInternalServerError, "failed to retrieve company information from stockapi", err)
 				return

@@ -2,19 +2,21 @@ package stockapi
 
 import (
 	"context"
+	"stockx-backend/db/models"
 	"strconv"
 	"time"
 
 	"github.com/Finnhub-Stock-API/finnhub-go/v2"
 )
 
-type CompanyInfo struct {
+type SymbolInfo struct {
 	CurrentStock finnhub.Quote           `json:"stock"`
 	Profile      finnhub.CompanyProfile2 `json:"profile"`
 	News         []finnhub.CompanyNews   `json:"news"`
+	Hold         models.HoldStocks       `json:"hold"`
 }
 
-func GetCompanyInfo(symbol string) (CompanyInfo, error) {
+func GetCompanyInfo(symbol string) (SymbolInfo, error) {
 	finnhubClient := finnhub.NewAPIClient(FinnhubConfiguration).DefaultApi
 
 	readyChan := make(chan int)
@@ -61,11 +63,11 @@ func GetCompanyInfo(symbol string) (CompanyInfo, error) {
 
 	for i := 0; i < 3; i++ {
 		if <-readyChan != 0 {
-			return CompanyInfo{}, err
+			return SymbolInfo{}, err
 		}
 	}
 
-	return CompanyInfo{CurrentStock: currentStockInfo, Profile: companyProfile, News: companyNews}, nil
+	return SymbolInfo{CurrentStock: currentStockInfo, Profile: companyProfile, News: companyNews}, nil
 }
 
 func GetQuoteForSymbol(symbol string) (finnhub.Quote, error) {

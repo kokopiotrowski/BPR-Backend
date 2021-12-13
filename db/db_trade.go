@@ -78,5 +78,29 @@ func GetTradesFromTableForUser(email string) (models.Trades, error) {
 		return models.Trades{}, err
 	}
 
+	if len(item.BoughtStocks) == 0 {
+		item.BoughtStocks = []models.BoughtStock{}
+	}
+
+	if len(item.SoldStocks) == 0 {
+		item.SoldStocks = []models.SoldStock{}
+	}
+
+	if len(item.ShortStocks) == 0 {
+		item.ShortStocks = []models.ShortStock{}
+	}
+
+	if len(item.BoughtToCover) == 0 {
+		item.BoughtToCover = []models.BoughtToCover{}
+	}
+
+	if len(item.HoldLong) == 0 {
+		item.HoldLong = []models.HoldLong{}
+	}
+
+	if len(item.HoldShort) == 0 {
+		item.HoldShort = []models.HoldShort{}
+	}
+
 	return item, nil
 }

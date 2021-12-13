@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"stockx-backend/auth"
+	"stockx-backend/stock"
 	"stockx-backend/users"
 	"stockx-backend/util"
 )
@@ -47,5 +48,18 @@ func UserChangePassword(w http.ResponseWriter, r *http.Request) {
 
 			util.RespondWithJSON(w, r, http.StatusOK, "User password changed", nil)
 		}
+	}
+}
+
+func GetUserPortfolio(w http.ResponseWriter, r *http.Request) {
+	var email string
+	if auth.CheckIfAuthorized(w, r, &email) {
+		portfolio, err := stock.GetPortfolio(email)
+		if err != nil {
+			util.RespondWithJSON(w, r, http.StatusInternalServerError, "failed to retrieve user's portfolio", err)
+			return
+		}
+
+		util.RespondWithJSON(w, r, http.StatusOK, portfolio, nil)
 	}
 }

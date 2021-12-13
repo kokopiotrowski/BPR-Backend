@@ -150,6 +150,7 @@ func AddWsListenerClient(id string, conn *websocket.Conn) {
 }
 
 func RemoveWsListenerClient(id string) {
+	listeningClients[id].c.Close()
 	delete(listeningClients, id)
 }
 

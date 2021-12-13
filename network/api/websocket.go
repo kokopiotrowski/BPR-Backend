@@ -25,7 +25,7 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	id := xid.New()
 
-	fmt.Printf("New client %v connected to websocket", id.String())
+	fmt.Printf("New client %v connected to websocket\n", id.String())
 
 	err = ws.WriteMessage(1, []byte("Connected to live stock data"))
 	if err != nil {
@@ -33,22 +33,18 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	stockapi.AddWsListenerClient(id.String(), ws)
-	// listen indefinitely for new messages coming
-	// through on our WebSocket connection
+
 	go reader(id.String(), ws)
 }
 
 func reader(id string, conn *websocket.Conn) {
-	defer closeConnection(id, conn)
+	defer closeConnection(id)
 
 	for {
-		// read in a message
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {
 			return
 		}
-		// print out that message for clarity
-		fmt.Printf("Message received from client %v: %v", id, messageType)
 
 		if err := conn.WriteMessage(messageType, p); err != nil {
 			log.Println(err)
@@ -57,8 +53,7 @@ func reader(id string, conn *websocket.Conn) {
 	}
 }
 
-func closeConnection(id string, conn *websocket.Conn) {
+func closeConnection(id string) {
 	stockapi.RemoveWsListenerClient(id)
-	conn.Close()
 	fmt.Printf("Websocket connection closed with client: %v", id)
 }

@@ -67,3 +67,7 @@ func Forbidden(name string, err error, message string) error {
 func Internal(name string, err error, message string) error {
 	return &httpError{http.StatusInternalServerError, name, err, message}
 }
+
+func Information(name string, err error, message string) error {
+	return &httpError{http.StatusEarlyHints, name, err, message}
+}

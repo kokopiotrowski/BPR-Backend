@@ -1,6 +1,7 @@
 package stock
 
 import (
+	"errors"
 	"stockx-backend/db"
 	"stockx-backend/db/models"
 	"stockx-backend/external/stockapi"
@@ -20,7 +21,7 @@ func BuyStock(email string, item models.BoughtStock) error {
 	}
 
 	if trades.Credits < *stock.C*float32(item.Amount) {
-		return reserr.BadRequest("not enough credits to buy stocks", nil, "")
+		return reserr.BadRequest("not enough credits to buy stocks", nil, "not enough credits to buy stocks")
 	}
 
 	item.Price = *stock.C
@@ -33,8 +34,14 @@ func BuyStock(email string, item models.BoughtStock) error {
 
 	dt := time.Now().In(loc)
 
-	item.Date = dt.Unix()
+	item.Date = dt.Unix() * 1000
 	trades.BoughtStocks = append(trades.BoughtStocks, item)
+	trades.HoldLong = append(trades.HoldLong, models.HoldLong{
+		Symbol: item.Symbol,
+		Price:  item.Price,
+		Amount: item.Amount,
+		Date:   item.Date,
+	})
 
 	err = db.PutTradesInTheTable(email, trades)
 
@@ -64,6 +71,12 @@ func ShortStock(email string, item models.ShortStock) error {
 
 	item.Date = dt.Unix()
 	trades.ShortStocks = append(trades.ShortStocks, item)
+	trades.HoldShort = append(trades.HoldShort, models.HoldShort{
+		Symbol: item.Symbol,
+		Price:  item.Price,
+		Amount: item.Amount,
+		Date:   item.Date,
+	})
 
 	err = db.PutTradesInTheTable(email, trades)
 
@@ -83,26 +96,26 @@ func SellStock(email string, item models.SoldStock) error {
 
 	amount := item.Amount
 
-	for i := len(trades.BoughtStocks) - 1; i >= 0; i-- {
-		if trades.BoughtStocks[i].Symbol == item.Symbol {
-			for amount > 0 && trades.BoughtStocks[i].Amount > 0 {
+	for i := len(trades.HoldLong) - 1; i >= 0; i-- {
+		if trades.HoldLong[i].Symbol == item.Symbol {
+			for amount > 0 && trades.HoldLong[i].Amount > 0 {
 				amount--
-				trades.BoughtStocks[i].Amount--
+				trades.HoldLong[i].Amount--
 			}
 
 			if amount == 0 {
 				break
 			}
 
-			if trades.BoughtStocks[i].Amount == 0 {
-				trades.BoughtStocks = append(trades.BoughtStocks[:i], trades.BoughtStocks[i+1:]...)
+			if trades.HoldLong[i].Amount == 0 {
+				trades.HoldLong = append(trades.HoldLong[:i], trades.HoldLong[i+1:]...)
 				continue
 			}
 		}
 	}
 
 	if amount > 0 {
-		return reserr.BadRequest("you don't own that many stocks to sell", nil, "")
+		return reserr.Information("", errors.New(""), "You don't own that many stocks of "+item.Symbol+" to sell! Firstly, buy some more :)")
 	}
 
 	item.Price = *stock.C
@@ -136,26 +149,26 @@ func BuyToCover(email string, item models.BoughtToCover) error {
 
 	amount := item.Amount
 
-	for i := len(trades.ShortStocks) - 1; i >= 0; i-- {
-		if trades.ShortStocks[i].Symbol == item.Symbol {
-			for amount > 0 && trades.ShortStocks[i].Amount > 0 {
+	for i := len(trades.HoldShort) - 1; i >= 0; i-- {
+		if trades.HoldShort[i].Symbol == item.Symbol {
+			for amount > 0 && trades.HoldShort[i].Amount > 0 {
 				amount--
-				trades.ShortStocks[i].Amount--
+				trades.HoldShort[i].Amount--
 			}
 
 			if amount == 0 {
 				break
 			}
 
-			if trades.ShortStocks[i].Amount == 0 {
-				trades.ShortStocks = append(trades.ShortStocks[:i], trades.ShortStocks[i+1:]...)
+			if trades.HoldShort[i].Amount == 0 {
+				trades.HoldShort = append(trades.HoldShort[:i], trades.HoldShort[i+1:]...)
 				continue
 			}
 		}
 	}
 
 	if amount > 0 {
-		return reserr.BadRequest("failed to cover stocks - you don't have that many stocks to cover", nil, "")
+		return reserr.Information("failed to cover stocks - you don't have that many stocks to cover", errors.New("failed to cover stocks - you don't have that many stocks to cover"), "failed to cover stocks - you don't have that many stocks of "+item.Symbol+" to cover")
 	}
 
 	item.Price = *stock.C

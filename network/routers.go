@@ -92,6 +92,13 @@ var routes = Routes{
 	},
 
 	Route{
+		"UserGetPortfolio",
+		strings.ToUpper("Get"),
+		"/user/portfolio",
+		api.GetUserPortfolio,
+	},
+
+	Route{
 		"GetStockSymbols",
 		strings.ToUpper("Get"),
 		"/stock/symbols", // form values - q(string)
@@ -106,10 +113,10 @@ var routes = Routes{
 	},
 
 	Route{
-		"GetCompanyInfo",
+		"GetSymbolInfo",
 		strings.ToUpper("Get"),
 		"/stock/company/info", // form values - symbol(string)
-		api.GetCompanyInfo,
+		api.GetSymbolInfo,
 	},
 
 	Route{
