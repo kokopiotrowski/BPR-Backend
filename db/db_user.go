@@ -12,13 +12,15 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
-func PutUserInTheTable(item interface{}, tableName string) error {
+func PutUserInTheTable(item models.User) error {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
 	// Create DynamoDB client
 	svc := dynamodb.New(sess)
+
+	tableName := "User"
 
 	av, err := dynamodbattribute.MarshalMap(item)
 	if err != nil {

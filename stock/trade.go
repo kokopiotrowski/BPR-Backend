@@ -10,6 +10,10 @@ import (
 )
 
 func BuyStock(email string, item models.BoughtStock) error {
+	if item.Amount < 1 {
+		return reserr.BadRequest("info", errors.New("buying 0 stocks"), "How do you think that would work? :)")
+	}
+
 	trades, err := db.GetTradesFromTableForUser(email)
 	if err != nil {
 		return err
@@ -21,7 +25,7 @@ func BuyStock(email string, item models.BoughtStock) error {
 	}
 
 	if trades.Credits < *stock.C*float32(item.Amount) {
-		return reserr.BadRequest("not enough credits to buy stocks", nil, "not enough credits to buy stocks")
+		return reserr.BadRequest("info", errors.New("not enough credits to buyt stocks"), "Not enough credits to buy stocks")
 	}
 
 	item.Price = *stock.C
@@ -36,12 +40,27 @@ func BuyStock(email string, item models.BoughtStock) error {
 
 	item.Date = dt.Unix() * 1000
 	trades.BoughtStocks = append(trades.BoughtStocks, item)
-	trades.HoldLong = append(trades.HoldLong, models.HoldLong{
-		Symbol: item.Symbol,
-		Price:  item.Price,
-		Amount: item.Amount,
-		Date:   item.Date,
-	})
+
+	exists := false
+
+	for _, hl := range trades.HoldLong {
+		if hl.Symbol == item.Symbol {
+			currentBuyPrice := ((hl.Price * float32(hl.Amount)) + (item.Price * float32(item.Amount))) / (float32(hl.Amount) + float32(item.Amount))
+			hl.Price = currentBuyPrice
+			hl.Amount += item.Amount
+			exists = true
+
+			break
+		}
+	}
+
+	if !exists {
+		trades.HoldLong = append(trades.HoldLong, models.HoldLong{
+			Symbol: item.Symbol,
+			Price:  item.Price,
+			Amount: item.Amount,
+		})
+	}
 
 	err = db.PutTradesInTheTable(email, trades)
 
@@ -49,6 +68,10 @@ func BuyStock(email string, item models.BoughtStock) error {
 }
 
 func ShortStock(email string, item models.ShortStock) error {
+	if item.Amount < 1 {
+		return reserr.BadRequest("info", errors.New("sell 0 stocks"), "How do you think that would work? :)")
+	}
+
 	trades, err := db.GetTradesFromTableForUser(email)
 	if err != nil {
 		return err
@@ -69,14 +92,29 @@ func ShortStock(email string, item models.ShortStock) error {
 
 	dt := time.Now().In(loc)
 
-	item.Date = dt.Unix()
+	item.Date = dt.Unix() * 1000
 	trades.ShortStocks = append(trades.ShortStocks, item)
-	trades.HoldShort = append(trades.HoldShort, models.HoldShort{
-		Symbol: item.Symbol,
-		Price:  item.Price,
-		Amount: item.Amount,
-		Date:   item.Date,
-	})
+
+	exists := false
+
+	for _, hs := range trades.HoldShort {
+		if hs.Symbol == item.Symbol {
+			currentBuyPrice := ((hs.Price * float32(hs.Amount)) + (item.Price * float32(item.Amount))) / (float32(hs.Amount) + float32(item.Amount))
+			hs.Price = currentBuyPrice
+			hs.Amount += item.Amount
+			exists = true
+
+			break
+		}
+	}
+
+	if !exists {
+		trades.HoldShort = append(trades.HoldShort, models.HoldShort{
+			Symbol: item.Symbol,
+			Price:  item.Price,
+			Amount: item.Amount,
+		})
+	}
 
 	err = db.PutTradesInTheTable(email, trades)
 
@@ -84,6 +122,10 @@ func ShortStock(email string, item models.ShortStock) error {
 }
 
 func SellStock(email string, item models.SoldStock) error {
+	if item.Amount < 1 {
+		return reserr.BadRequest("info", errors.New("sell 0 stocks"), "How do you think that would work? :)")
+	}
+
 	trades, err := db.GetTradesFromTableForUser(email)
 	if err != nil {
 		return err
@@ -115,7 +157,7 @@ func SellStock(email string, item models.SoldStock) error {
 	}
 
 	if amount > 0 {
-		return reserr.Information("", errors.New(""), "You don't own that many stocks of "+item.Symbol+" to sell! Firstly, buy some more :)")
+		return reserr.BadRequest("info", errors.New("not enough stocks held by user to sell"), "You don't own that many stocks of "+item.Symbol+" to sell! Firstly, buy some more :)")
 	}
 
 	item.Price = *stock.C
@@ -128,7 +170,7 @@ func SellStock(email string, item models.SoldStock) error {
 
 	dt := time.Now().In(loc)
 
-	item.Date = dt.Unix()
+	item.Date = dt.Unix() * 1000
 	trades.SoldStocks = append(trades.SoldStocks, item)
 
 	err = db.PutTradesInTheTable(email, trades)
@@ -137,6 +179,10 @@ func SellStock(email string, item models.SoldStock) error {
 }
 
 func BuyToCover(email string, item models.BoughtToCover) error {
+	if item.Amount < 1 {
+		return reserr.BadRequest("info", errors.New("info"), "How do you think that would work?")
+	}
+
 	trades, err := db.GetTradesFromTableForUser(email)
 	if err != nil {
 		return err
@@ -168,7 +214,7 @@ func BuyToCover(email string, item models.BoughtToCover) error {
 	}
 
 	if amount > 0 {
-		return reserr.Information("failed to cover stocks - you don't have that many stocks to cover", errors.New("failed to cover stocks - you don't have that many stocks to cover"), "failed to cover stocks - you don't have that many stocks of "+item.Symbol+" to cover")
+		return reserr.BadRequest("info", errors.New("not that many stocks to cover"), "You don't have that many stocks of "+item.Symbol+" to cover")
 	}
 
 	item.Price = *stock.C
@@ -181,7 +227,7 @@ func BuyToCover(email string, item models.BoughtToCover) error {
 
 	dt := time.Now().In(loc)
 
-	item.Date = dt.Unix()
+	item.Date = dt.Unix() * 1000
 	trades.BoughtToCover = append(trades.BoughtToCover, item)
 
 	err = db.PutTradesInTheTable(email, trades)

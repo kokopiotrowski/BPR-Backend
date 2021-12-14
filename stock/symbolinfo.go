@@ -10,7 +10,7 @@ import (
 func GetSymbolInfo(email, symbol string) (stockapi.SymbolInfo, error) {
 	symbolInfo, err := stockapi.GetCompanyInfo(symbol)
 	if err != nil {
-		return stockapi.SymbolInfo{}, reserr.Internal("Symbol info error", err, "Could not retrieve symbol information")
+		return stockapi.SymbolInfo{}, reserr.Internal("error", err, "Could not retrieve symbol information")
 	}
 
 	symbolInfo.Hold = models.HoldStocks{
@@ -20,7 +20,7 @@ func GetSymbolInfo(email, symbol string) (stockapi.SymbolInfo, error) {
 
 	trades, err := db.GetTradesFromTableForUser(email)
 	if err != nil {
-		return stockapi.SymbolInfo{}, reserr.Internal("Symbol info error", err, "Could not retrieve users information for this symbol")
+		return stockapi.SymbolInfo{}, reserr.Internal("error", err, "Could not retrieve users information for this symbol")
 	}
 
 	for _, t := range trades.HoldLong {
@@ -34,6 +34,8 @@ func GetSymbolInfo(email, symbol string) (stockapi.SymbolInfo, error) {
 			symbolInfo.Hold.HoldShort = append(symbolInfo.Hold.HoldShort, t)
 		}
 	}
+
+	symbolInfo.Credits = trades.Credits
 
 	return symbolInfo, nil
 }

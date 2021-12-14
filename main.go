@@ -6,8 +6,8 @@ import (
 	"stockx-backend/conf"
 	"stockx-backend/db"
 	"stockx-backend/external/stockapi"
+	"stockx-backend/jobs"
 	"stockx-backend/network"
-	"stockx-backend/stock"
 
 	"github.com/Finnhub-Stock-API/finnhub-go/v2"
 	"github.com/rs/cors"
@@ -40,7 +40,7 @@ func main() {
 
 	go stockapi.StartListening(config.StockAPI.Key)
 
-	err = stock.StartTrackingStatistics()
+	err = jobs.StartSteve()
 	if err != nil {
 		panic(1)
 	}

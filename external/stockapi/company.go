@@ -14,6 +14,7 @@ type SymbolInfo struct {
 	Profile      finnhub.CompanyProfile2 `json:"profile"`
 	News         []finnhub.CompanyNews   `json:"news"`
 	Hold         models.HoldStocks       `json:"hold"`
+	Credits      float32                 `json:"credits"` //users available credits for trading
 }
 
 func GetCompanyInfo(symbol string) (SymbolInfo, error) {

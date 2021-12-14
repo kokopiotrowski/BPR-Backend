@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"stockx-backend/auth"
 	"stockx-backend/stock"
@@ -61,5 +62,32 @@ func GetUserPortfolio(w http.ResponseWriter, r *http.Request) {
 		}
 
 		util.RespondWithJSON(w, r, http.StatusOK, portfolio, nil)
+	}
+}
+
+func GetUserStatistics(w http.ResponseWriter, r *http.Request) {
+	var email string
+	if auth.CheckIfAuthorized(w, r, &email) {
+		stats, err := stock.GetStatisticsForUser(email)
+		if err != nil {
+			util.RespondWithJSON(w, r, http.StatusInternalServerError, "failed to retrieve user's statistics", err)
+			return
+		}
+
+		util.RespondWithJSON(w, r, http.StatusOK, stats, nil)
+	}
+}
+
+func ConfirmAccount(w http.ResponseWriter, r *http.Request) {
+	var token string
+	if util.DecodeFormValueAsString(w, r, "t", &token) {
+		page, err := users.ConfirmUserAccount(token)
+		if err != nil {
+			util.RespondWithJSON(w, r, http.StatusInternalServerError, "failed to retrieve user's statistics", err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprint(w, page)
 	}
 }

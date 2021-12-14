@@ -1,9 +1,7 @@
 package db
 
 import (
-	"net/mail"
 	"stockx-backend/db/models"
-	"stockx-backend/reserr"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -11,12 +9,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
-func PutStatisticsInTheTable(email string, item models.Statistics) error {
+func PutRankingsInTheTable(item models.Rankings) error {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
-	// Create DynamoDB client
 	svc := dynamodb.New(sess)
 
 	av, err := dynamodbattribute.MarshalMap(item)
@@ -24,7 +21,7 @@ func PutStatisticsInTheTable(email string, item models.Statistics) error {
 		return err
 	}
 
-	tableName := "Statistics"
+	tableName := "Rankings"
 
 	input := &dynamodb.PutItemInput{
 		Item:      av,
@@ -39,7 +36,7 @@ func PutStatisticsInTheTable(email string, item models.Statistics) error {
 	return nil
 }
 
-func GetStatisticsFromTableForUser(email string) (models.Statistics, error) {
+func GetRankingsFromTableForUser(date string) (models.Rankings, error) {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
@@ -49,52 +46,57 @@ func GetStatisticsFromTableForUser(email string) (models.Statistics, error) {
 
 	var err error
 
-	tableName := "Statistics"
+	tableName := "Rankings"
+	region := "Europe/Copenhagen"
 
-	if _, err = mail.ParseAddress(email); err == nil {
-		result, err = svc.GetItem(&dynamodb.GetItemInput{
-			TableName: aws.String(tableName),
-			Key: map[string]*dynamodb.AttributeValue{
-				"email": {
-					S: aws.String(email),
-				},
+	result, err = svc.GetItem(&dynamodb.GetItemInput{
+		TableName: aws.String(tableName),
+		Key: map[string]*dynamodb.AttributeValue{
+			"region": {
+				S: aws.String(region),
 			},
-		})
-		if err != nil {
-			return models.Statistics{}, err
-		}
-	} else {
-		return models.Statistics{}, reserr.NotFound("invalid email", err, "email did not pass regex")
+			"date": {
+				S: aws.String(date),
+			},
+		},
+	})
+	if err != nil {
+		return models.Rankings{}, err
 	}
 
 	if result.Item == nil {
-		return models.Statistics{}, nil
+		return models.Rankings{}, nil
 	}
 
-	item := models.Statistics{}
+	item := models.Rankings{}
 
 	err = dynamodbattribute.UnmarshalMap(result.Item, &item)
 	if err != nil {
-		return models.Statistics{}, err
+		return models.Rankings{}, err
 	}
 
 	return item, nil
 }
 
-func DeleteStatistics(email string) error {
+func DeleteRankings(date string) error {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
 	svc := dynamodb.New(sess)
 
+	region := "Europe/Copenhagen"
+
 	input := &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			"email": {
-				S: aws.String(email),
+			"region": {
+				S: aws.String(region),
+			},
+			"date": {
+				S: aws.String(date),
 			},
 		},
-		TableName: aws.String("Statistics"),
+		TableName: aws.String("Rankings"),
 	}
 
 	_, err := svc.DeleteItem(input)

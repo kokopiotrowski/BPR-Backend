@@ -50,6 +50,27 @@ var routes = Routes{
 	},
 
 	Route{
+		"ListRegisteredUsers",
+		strings.ToUpper("Get"),
+		"/admin/users",
+		api.GetListOfRegisteredUsers,
+	},
+
+	Route{
+		"DeleteRegisteredUser",
+		strings.ToUpper("Delete"),
+		"/admin/users", //form values - email (string)
+		api.DeleteRegisteredUser,
+	},
+
+	Route{
+		"DownloadLogFile",
+		strings.ToUpper("Get"),
+		"/admin/logs",
+		api.GetLogs,
+	},
+
+	Route{
 		"Websocket",
 		strings.ToUpper("Get"),
 		"/ws",
@@ -68,6 +89,13 @@ var routes = Routes{
 		strings.ToUpper("Post"),
 		"/auth/register",
 		api.RegisterUser,
+	},
+
+	Route{
+		"ConfirmUserAccount",
+		strings.ToUpper("Get"),
+		"/user/confirm", // form value - t(string)
+		api.ConfirmAccount,
 	},
 
 	Route{
@@ -96,6 +124,13 @@ var routes = Routes{
 		strings.ToUpper("Get"),
 		"/user/portfolio",
 		api.GetUserPortfolio,
+	},
+
+	Route{
+		"UserGetStatistics",
+		strings.ToUpper("Get"),
+		"/user/statistics",
+		api.GetUserStatistics,
 	},
 
 	Route{
@@ -147,7 +182,7 @@ var routes = Routes{
 		api.BuyStockShort,
 	},
 	Route{
-		"BuyStockLong",
+		"BuyToCover",
 		strings.ToUpper("Post"),
 		"/stock/short/cover",
 		api.BuyToCover,

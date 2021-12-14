@@ -29,10 +29,6 @@ type Credentials struct {
 	Password string `json:"password"`
 }
 
-const (
-	VERKEY = "jdnfksdmfksd"
-)
-
 type Token struct {
 	Token string `json:"authorization"`
 }
@@ -46,11 +42,11 @@ func RegisterUser(register Register) (bool, error) {
 	var validUsername = regexp.MustCompile("^[a-zA-Z0-9]*[-]?[a-zA-Z0-9]*$")
 
 	if !validUsername.MatchString(register.Username) {
-		return false, reserr.BadRequest("invalid username", errors.New("username constains not accepted symbols"), "")
+		return false, reserr.BadRequest("info", errors.New("username constains not accepted symbols"), "Username constains not accepted symbols")
 	}
 
 	if _, err := mail.ParseAddress(register.Email); err != nil {
-		return false, reserr.BadRequest("invalid email", err, "")
+		return false, reserr.BadRequest("info", err, "Invalid email!")
 	}
 
 	hashedPass, err := HashPassword(register.Password)
@@ -70,11 +66,13 @@ func RegisterUser(register Register) (bool, error) {
 		Username:    register.Username,
 		Password:    hashedPass,
 		DateCreated: dt.Format("01-02-2006 15:04:05"),
+		IsAdmin:     false,
+		IsConfirmed: false,
 	}
 
-	err = db.PutUserInTheTable(newUser, "User")
+	err = db.PutUserInTheTable(newUser)
 	if err != nil {
-		return false, reserr.Internal("db error", err, "failed to save newly registered user in database")
+		return false, reserr.Internal("error", err, "failed to save newly registered user in database")
 	}
 
 	err = db.PutTradesInTheTable(newUser.Email, models.Trades{
@@ -88,30 +86,35 @@ func RegisterUser(register Register) (bool, error) {
 		HoldShort:     []models.HoldShort{},
 	})
 	if err != nil {
-		return false, reserr.Internal("db error", err, "failed to add new trades for newly registered user in database")
+		return false, reserr.Internal("error", err, "failed to add new trades for newly registered user in database")
 	}
 
 	err = db.PutStatisticsInTheTable(newUser.Email, models.Statistics{
 		Email: newUser.Email,
 	})
 	if err != nil {
-		return false, reserr.Internal("db error", err, "failed to begin tracking statistics for newly registered user in database")
+		return false, reserr.Internal("error", err, "failed to begin tracking statistics for newly registered user in database")
 	}
 
 	registeredUsers, err := db.GetListOfRegisteredUsers()
 	if err != nil {
-		return false, reserr.Internal("db error", err, "Failed to add user to list of users")
+		return false, reserr.Internal("error", err, "Failed to add user to list of users")
 	}
 
 	registeredUsers.Users = append(registeredUsers.Users, newUser.Email)
 
 	err = db.PutListOfRegisteredUsersInTheTable(registeredUsers)
 	if err != nil {
-		return false, reserr.Internal("db error", err, "Failed to add user to list of users")
+		return false, reserr.Internal("error", err, "Failed to add user to list of users")
+	}
+
+	confirmToken, err := generateConfirmationToken(newUser.Email)
+	if err != nil {
+		return false, reserr.Internal("error", err, "Failed to generate confirmation account link for user")
 	}
 
 	go func() {
-		err = email.SendConfirmRegistrationEmail(register.Email, conf.Conf.Email)
+		err = email.SendConfirmRegistrationEmail(newUser.Email, newUser.Username, confirmToken)
 	}()
 
 	return true, err
@@ -124,11 +127,15 @@ func LogIn(login Credentials) (Token, error) {
 		return Token{}, err
 	}
 
-	if !ComparePasswords(user.Password, []byte(login.Password)) {
-		return Token{}, reserr.Forbidden("Failed to login", errors.New("failed to login"), "incorrect password")
+	if !user.IsConfirmed {
+		return Token{}, reserr.Forbidden("error", errors.New("failed to login - user account not confirmed"), "User registration has not been confirmed yet")
 	}
 
-	token, err := CreateToken(user.Email)
+	if !ComparePasswords(user.Password, []byte(login.Password)) {
+		return Token{}, reserr.Forbidden("error", errors.New("failed to login - wrong password"), "Incorrect password")
+	}
+
+	token, err := CreateToken(user.Email, user.IsAdmin)
 	if err != nil {
 		return Token{}, errors.New("could not generate token")
 	}
@@ -183,22 +190,53 @@ func ComparePasswords(hashedPwd string, plainPwd []byte) bool {
 	return true
 }
 
-func CreateToken(email string) (string, error) {
+func CreateToken(email string, isAdmin bool) (string, error) {
 	var err error
 
 	atClaims := jwt.MapClaims{}
 	atClaims["authorized"] = true
 	atClaims["email"] = email
+	atClaims["admin"] = isAdmin
 
 	atClaims["exp"] = time.Now().Add(time.Minute * 300).Unix()
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-	token, err := at.SignedString([]byte(VERKEY))
+	token, err := at.SignedString([]byte(conf.Conf.Server.EncodingVerKey))
 
 	if err != nil {
 		return "", err
 	}
 
 	return token, nil
+}
+
+func generateConfirmationToken(email string) (string, error) {
+	var err error
+
+	atClaims := jwt.MapClaims{}
+	atClaims["email"] = email
+
+	atClaims["exp"] = time.Now().Add(time.Minute * 300).Unix()
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	token, err := at.SignedString([]byte(conf.Conf.Server.EncodingVerKey))
+
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
+func ExtractEmailFromConfirmationToken(token string) (string, error) {
+	claims := jwt.MapClaims{}
+	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(conf.Conf.Server.EncodingVerKey), nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return claims["email"].(string), nil
 }
 
 func TokenValid(r *http.Request) error {
@@ -220,7 +258,7 @@ func VerifyToken(r *http.Request) (*jwt.Token, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(VERKEY), nil
+		return []byte(conf.Conf.Server.EncodingVerKey), nil
 	})
 
 	if err != nil {
@@ -239,7 +277,7 @@ func GetEmailFromToken(r *http.Request) (string, error) {
 	tokenString := ExtractToken(r)
 	claims := jwt.MapClaims{}
 	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(VERKEY), nil
+		return []byte(conf.Conf.Server.EncodingVerKey), nil
 	})
 
 	if err != nil {
@@ -247,4 +285,18 @@ func GetEmailFromToken(r *http.Request) (string, error) {
 	}
 
 	return claims["email"].(string), nil
+}
+
+func CheckIfAdmin(r *http.Request) (bool, error) {
+	tokenString := ExtractToken(r)
+	claims := jwt.MapClaims{}
+	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(conf.Conf.Server.EncodingVerKey), nil
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	return claims["admin"].(bool), nil
 }

@@ -37,11 +37,12 @@ type ListeningClient struct {
 }
 
 var (
-	externalWebsocket *websocket.Conn
-	listeningClients  = make(map[string]*ListeningClient)
-	loadForListeners  = make(map[string]*LiveData)
-	quoteMap          = make(map[string]finnhub.Quote)
-	symbols           = []string{"AAPL", "MSFT", "AMZN",
+	externalWebsocket   *websocket.Conn
+	listeningClients    = make(map[string]*ListeningClient)
+	loadForListeners    = make(map[string]*LiveData)
+	quoteMap            = make(map[string]finnhub.Quote)
+	liveDataPropagation func()
+	symbols             = []string{"AAPL", "MSFT", "AMZN",
 		"TSLA", "NVDA", "GOOG", "GOOGL", "FB", "NFLX",
 		"CMCSA", "CSCO", "COST", "AVGO", "PEP", "PYPL", "INTC",
 		"QCOM", "TXN", "INTU", "AMD", "TMUS", "HON", "AMAT", "SBUX",
@@ -99,7 +100,10 @@ func StartListening(token string) {
 
 	data := &WebSocketResponse{}
 
-	go startInformingListeners()
+	if liveDataPropagation == nil {
+		liveDataPropagation = informListeners
+		go liveDataPropagation()
+	}
 
 	for {
 		err := externalWebsocket.ReadJSON(data)
@@ -154,7 +158,7 @@ func RemoveWsListenerClient(id string) {
 	delete(listeningClients, id)
 }
 
-func startInformingListeners() {
+func informListeners() {
 	for {
 		for _, l := range listeningClients {
 			err := l.sendLoad(loadForListeners)

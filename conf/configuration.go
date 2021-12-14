@@ -17,6 +17,7 @@ type ServerConfigurations struct {
 	DevPort        string `yaml:"devPort"`
 	SSLKey         string `yaml:"sslkey"`
 	SSLCertificate string `yaml:"sslcert"`
+	EncodingVerKey string `yaml:"verkey"`
 }
 
 type EmailConfigurations struct {

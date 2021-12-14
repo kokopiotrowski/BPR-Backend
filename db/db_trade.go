@@ -104,3 +104,24 @@ func GetTradesFromTableForUser(email string) (models.Trades, error) {
 
 	return item, nil
 }
+
+func DeleteTrades(email string) error {
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	svc := dynamodb.New(sess)
+
+	input := &dynamodb.DeleteItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"email": {
+				S: aws.String(email),
+			},
+		},
+		TableName: aws.String("Trades"),
+	}
+
+	_, err := svc.DeleteItem(input)
+
+	return err
+}

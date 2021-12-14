@@ -4,30 +4,63 @@ import (
 	"fmt"
 	"stockx-backend/db"
 	"stockx-backend/db/models"
+	"stockx-backend/reserr"
 	"time"
-
-	"github.com/robfig/cron/v3"
 )
 
-func StartTrackingStatistics() error {
-	loc, err := time.LoadLocation("America/New_York")
-	if err != nil {
-		return err
-	}
-
-	cronRunner := cron.New(cron.WithLocation(loc))
-
-	_, err = cronRunner.AddFunc("0 16 * * 1-5", collectInformation)
-	if err != nil {
-		return err
-	}
-
-	cronRunner.Start()
-
-	return nil
+type ReturnStatTable struct {
+	Name string    `json:"name"`
+	X    []string  `json:"x"`
+	Y    []float32 `json:"y"`
 }
 
-func collectInformation() {
+func GetStatisticsForUser(email string) ([]ReturnStatTable, error) {
+	stats, err := db.GetStatisticsFromTableForUser(email)
+	if err != nil {
+		return []ReturnStatTable{}, reserr.Internal("error", err, "Failed to retrieve statistics")
+	}
+
+	accountValueTable := ReturnStatTable{
+		Name: "Account Value",
+		X:    []string{},
+		Y:    []float32{},
+	}
+
+	for _, acval := range stats.AccountValue {
+		accountValueTable.X = append(accountValueTable.X, acval.Date)
+		accountValueTable.Y = append(accountValueTable.Y, acval.AcountValue)
+	}
+
+	creditsTable := ReturnStatTable{
+		Name: "Credits",
+		X:    []string{},
+		Y:    []float32{},
+	}
+
+	for _, accred := range stats.Credits {
+		creditsTable.X = append(creditsTable.X, accred.Date)
+		creditsTable.Y = append(creditsTable.Y, accred.Credits)
+	}
+
+	amountOwnedStockTable := ReturnStatTable{
+		Name: "Amount of owned stocks",
+		X:    []string{},
+		Y:    []float32{},
+	}
+
+	for _, ownedStockAm := range stats.OwnedStocksAmount {
+		amountOwnedStockTable.X = append(amountOwnedStockTable.X, ownedStockAm.Date)
+		amountOwnedStockTable.Y = append(amountOwnedStockTable.Y, float32(ownedStockAm.Amount))
+	}
+
+	return []ReturnStatTable{
+		accountValueTable,
+		creditsTable,
+		amountOwnedStockTable,
+	}, nil
+}
+
+func TrackStatistics() {
 	fmt.Println("Collecting statistics...")
 
 	loc, err := time.LoadLocation("Europe/Copenhagen")
@@ -37,7 +70,7 @@ func collectInformation() {
 
 	dt := time.Now().In(loc)
 
-	currentDate := dt.Format("01-02-2006")
+	currentDate := dt.Format("02-01-2006")
 
 	listOfUsers, err := db.GetListOfRegisteredUsers()
 	if err != nil {
