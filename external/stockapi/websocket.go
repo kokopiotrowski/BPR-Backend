@@ -13,12 +13,12 @@ import (
 //for serving to clients
 type LiveData struct {
 	Symbol             string  `json:"s"`
-	CurrentPrice       float64 `json:"c"`
-	OpenPrice          float64 `json:"o"`
-	PercentChange      float64 `json:"p"`
-	Difference         float64 `json:"d"`
+	CurrentPrice       float32 `json:"c"`
+	OpenPrice          float32 `json:"o"`
+	PercentChange      float32 `json:"p"`
+	Difference         float32 `json:"d"`
 	Raising            int     `json:"r"`
-	previousClosePrice float64
+	previousClosePrice float32
 }
 
 //response from external API
@@ -28,7 +28,7 @@ type WebSocketResponse struct {
 
 type Data struct {
 	S string  `json:"s,omitempty"` //symbol
-	P float64 `json:"p,omitempty"` //last price
+	P float32 `json:"p,omitempty"` //last price
 }
 
 type ListeningClient struct {
@@ -56,30 +56,7 @@ func StartListening(token string) {
 		externalWebsocket.Close()
 	}
 
-	if len(loadForListeners) < 1 {
-		ready := make(chan int)
-		for _, s := range symbols {
-			go func(symbol string, ready chan int) {
-				q, err := GetQuoteForSymbol(symbol)
-				if err != nil {
-					ready <- 1
-				}
-
-				quoteMap[symbol] = q
-				ready <- 0
-			}(s, ready)
-		}
-
-		//waiting for all requests to be ready
-		for _, s := range symbols {
-			if <-ready != 0 {
-				fmt.Printf("retrieving stock data for websocket failed %v", s)
-				return
-			}
-		}
-
-		prepairLoad()
-	}
+	ReloadStockInfo()
 
 	externalWebsocket, _, err := websocket.DefaultDialer.Dial("wss://ws.finnhub.io?token="+token, nil)
 	if err != nil {
@@ -178,15 +155,42 @@ func (l *ListeningClient) sendLoad(v interface{}) error {
 	return l.c.WriteJSON(v)
 }
 
+func ReloadStockInfo() {
+	if len(loadForListeners) < 1 {
+		ready := make(chan int)
+		for _, s := range symbols {
+			go func(symbol string, ready chan int) {
+				q, err := GetQuoteForSymbol(symbol)
+				if err != nil {
+					ready <- 1
+				}
+
+				quoteMap[symbol] = q
+				ready <- 0
+			}(s, ready)
+		}
+
+		//waiting for all requests to be ready
+		for _, s := range symbols {
+			if <-ready != 0 {
+				fmt.Printf("retrieving stock data for websocket failed %v", s)
+				return
+			}
+		}
+
+		prepairLoad()
+	}
+}
+
 func prepairLoad() {
 	for _, s := range symbols {
 		if l, ok := loadForListeners[s]; ok {
-			l.OpenPrice = float64(*quoteMap[s].O)
+			l.OpenPrice = *quoteMap[s].O
 			l.Symbol = s
 		} else {
 			loadForListeners[s] = &LiveData{
-				OpenPrice:          float64(*quoteMap[s].O),
-				previousClosePrice: float64(*quoteMap[s].Pc),
+				OpenPrice:          *quoteMap[s].O,
+				previousClosePrice: *quoteMap[s].Pc,
 				Symbol:             s,
 			}
 		}

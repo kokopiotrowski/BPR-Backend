@@ -2,6 +2,8 @@ package stockapi
 
 import (
 	"context"
+	"errors"
+	"stockx-backend/reserr"
 	"time"
 
 	"github.com/Finnhub-Stock-API/finnhub-go/v2"
@@ -19,6 +21,10 @@ func GetStockCandles(symbol string) (Candles, error) {
 		return Candles{}, err
 	}
 
+	if *res.S != "ok" {
+		return Candles{}, reserr.Internal("error", errors.New("response from external api is empty"), "Failed to retrieve chart data for this stock.\nSearch for more popular ones.")
+	}
+
 	candles := Candles{
 		Ohlcv: make([][]interface{}, len(*res.T)),
 	}
@@ -31,7 +37,7 @@ func GetStockCandles(symbol string) (Candles, error) {
 				(*res.H)[i],
 				(*res.L)[i],
 				(*res.C)[i],
-				float64((*res.V)[i])}
+				(*res.V)[i]}
 		}
 	}
 

@@ -21,7 +21,7 @@ func BuyStock(email string, item models.BoughtStock) error {
 
 	stock, err := stockapi.GetQuoteForSymbol(item.Symbol)
 	if err != nil {
-		return err
+		return reserr.Internal("error", err, "Failed to get information about the stock")
 	}
 
 	if trades.Credits < *stock.C*float32(item.Amount) {
@@ -43,11 +43,11 @@ func BuyStock(email string, item models.BoughtStock) error {
 
 	exists := false
 
-	for _, hl := range trades.HoldLong {
-		if hl.Symbol == item.Symbol {
-			currentBuyPrice := ((hl.Price * float32(hl.Amount)) + (item.Price * float32(item.Amount))) / (float32(hl.Amount) + float32(item.Amount))
-			hl.Price = currentBuyPrice
-			hl.Amount += item.Amount
+	for i := 0; i < len(trades.HoldLong); i++ {
+		if trades.HoldLong[i].Symbol == item.Symbol {
+			currentBuyPrice := ((trades.HoldLong[i].Price * float32(trades.HoldLong[i].Amount)) + (item.Price * float32(item.Amount))) / (float32(trades.HoldLong[i].Amount) + float32(item.Amount))
+			trades.HoldLong[i].Price = currentBuyPrice
+			trades.HoldLong[i].Amount += item.Amount
 			exists = true
 
 			break
@@ -63,8 +63,11 @@ func BuyStock(email string, item models.BoughtStock) error {
 	}
 
 	err = db.PutTradesInTheTable(email, trades)
+	if err != nil {
+		return reserr.Internal("error", err, "Failed to update trades. Purchase has not been made")
+	}
 
-	return err
+	return nil
 }
 
 func ShortStock(email string, item models.ShortStock) error {
@@ -79,7 +82,7 @@ func ShortStock(email string, item models.ShortStock) error {
 
 	stock, err := stockapi.GetQuoteForSymbol(item.Symbol)
 	if err != nil {
-		return err
+		return reserr.Internal("error", err, "Failed to get information about the stock")
 	}
 
 	item.Price = *stock.C
@@ -97,11 +100,11 @@ func ShortStock(email string, item models.ShortStock) error {
 
 	exists := false
 
-	for _, hs := range trades.HoldShort {
-		if hs.Symbol == item.Symbol {
-			currentBuyPrice := ((hs.Price * float32(hs.Amount)) + (item.Price * float32(item.Amount))) / (float32(hs.Amount) + float32(item.Amount))
-			hs.Price = currentBuyPrice
-			hs.Amount += item.Amount
+	for i := 0; i < len(trades.HoldShort); i++ {
+		if trades.HoldShort[i].Symbol == item.Symbol {
+			currentBuyPrice := ((trades.HoldShort[i].Price * float32(trades.HoldShort[i].Amount)) + (item.Price * float32(item.Amount))) / (float32(trades.HoldShort[i].Amount) + float32(item.Amount))
+			trades.HoldShort[i].Price = currentBuyPrice
+			trades.HoldShort[i].Amount += item.Amount
 			exists = true
 
 			break
@@ -133,20 +136,20 @@ func SellStock(email string, item models.SoldStock) error {
 
 	stock, err := stockapi.GetQuoteForSymbol(item.Symbol)
 	if err != nil {
-		return err
+		return reserr.Internal("error", err, "Failed to get information about the stock")
 	}
 
 	amount := item.Amount
 
 	for i := len(trades.HoldLong) - 1; i >= 0; i-- {
+		if amount == 0 {
+			break
+		}
+
 		if trades.HoldLong[i].Symbol == item.Symbol {
 			for amount > 0 && trades.HoldLong[i].Amount > 0 {
 				amount--
 				trades.HoldLong[i].Amount--
-			}
-
-			if amount == 0 {
-				break
 			}
 
 			if trades.HoldLong[i].Amount == 0 {
@@ -190,20 +193,20 @@ func BuyToCover(email string, item models.BoughtToCover) error {
 
 	stock, err := stockapi.GetQuoteForSymbol(item.Symbol)
 	if err != nil {
-		return err
+		return reserr.Internal("error", err, "Failed to get information about the stock")
 	}
 
 	amount := item.Amount
 
 	for i := len(trades.HoldShort) - 1; i >= 0; i-- {
+		if amount == 0 {
+			break
+		}
+
 		if trades.HoldShort[i].Symbol == item.Symbol {
 			for amount > 0 && trades.HoldShort[i].Amount > 0 {
 				amount--
 				trades.HoldShort[i].Amount--
-			}
-
-			if amount == 0 {
-				break
 			}
 
 			if trades.HoldShort[i].Amount == 0 {
@@ -218,7 +221,7 @@ func BuyToCover(email string, item models.BoughtToCover) error {
 	}
 
 	item.Price = *stock.C
-	trades.Credits += item.Price * float32(item.Amount)
+	trades.Credits -= item.Price * float32(item.Amount)
 
 	loc, err := time.LoadLocation("Europe/Copenhagen")
 	if err != nil {

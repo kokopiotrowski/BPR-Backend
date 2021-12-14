@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"stockx-backend/conf"
 	"time"
 )
 
@@ -13,17 +14,18 @@ func Logger(inner http.Handler, name string) http.Handler {
 
 		inner.ServeHTTP(w, r)
 
-		//year, month, day := start.Date()
+		if conf.FlagConf.IsLoggingOn {
+			//year, month, day := start.Date()
 
-		//absPath, _ := filepath.Abs(strconv.FormatInt(int64(year), 10) + "/" + month.String() + "/" + strconv.FormatInt(int64(day), 10) + ".log")
+			//absPath, _ := filepath.Abs(strconv.FormatInt(int64(year), 10) + "/" + month.String() + "/" + strconv.FormatInt(int64(day), 10) + ".log")
+			f, err := os.OpenFile("logfile.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+			if err != nil {
+				log.Fatalf("error opening file: %v", err)
+			}
+			defer f.Close()
 
-		f, err := os.OpenFile("logfile.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			log.Fatalf("error opening file: %v", err)
+			log.SetOutput(f)
 		}
-		defer f.Close()
-
-		log.SetOutput(f)
 
 		if r.RequestURI != "/index" {
 			log.Printf(

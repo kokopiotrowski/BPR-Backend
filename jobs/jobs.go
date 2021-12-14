@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"stockx-backend/external/stockapi"
 	"stockx-backend/stock"
 	"stockx-backend/users"
 	"time"
@@ -22,6 +23,11 @@ func StartSteve() error {
 	}
 
 	_, err = cronRunner.AddFunc("0 17 * * 1-5", users.TrackRanking)
+	if err != nil {
+		return err
+	}
+
+	_, err = cronRunner.AddFunc("35 9 * * 1-5", stockapi.ReloadStockInfo) // 5 minutes after opening stock market reload information about each symbol
 	if err != nil {
 		return err
 	}

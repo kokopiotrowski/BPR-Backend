@@ -92,6 +92,13 @@ var routes = Routes{
 	},
 
 	Route{
+		"GetRanking",
+		strings.ToUpper("Get"),
+		"/ranking",
+		api.GetRanking,
+	},
+
+	Route{
 		"ConfirmUserAccount",
 		strings.ToUpper("Get"),
 		"/user/confirm", // form value - t(string)

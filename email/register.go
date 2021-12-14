@@ -22,7 +22,7 @@ func SendConfirmRegistrationEmail(recipient, username, token string) error {
 
 	msg := []byte("From: " + from + "\r\n" +
 		"To: " + recipient + "\r\n" +
-		"Subject: STOCKX - Confirm your account\r\n\r\n" +
+		"Subject: StockX - Confirm your account\r\n\r\n" +
 		"Hey " + username + " - Welcome to StockX!\r\n\r\n" +
 		"We hope you will have good time exploring Stock Market world, that you will learn a lot about it. We want to deliver a tool so you can do so without taking any risks.\r\n\r\n" +
 		"Please confirm your account using following link: " +
@@ -37,7 +37,7 @@ func SendConfirmRegistrationEmail(recipient, username, token string) error {
 		return err
 	}
 
-	fmt.Println("Email Sent Successfully!")
+	fmt.Println("Confirmation email sent successfully!")
 
 	return nil
 }

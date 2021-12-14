@@ -36,7 +36,7 @@ func PutRankingsInTheTable(item models.Rankings) error {
 	return nil
 }
 
-func GetRankingsFromTableForUser(date string) (models.Rankings, error) {
+func GetRankingsFromTable(date string) (models.Rankings, error) {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))

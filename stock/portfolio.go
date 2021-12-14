@@ -27,8 +27,8 @@ func GetPortfolio(email string) (models.Trades, error) {
 			}
 
 			trade.HoldLong[index].CurrentPrice = q.GetC()
-			trade.HoldLong[index].Gain = trade.HoldLong[index].CurrentPrice - trade.HoldLong[index].Price
-			trade.HoldLong[index].GainP = (trade.HoldLong[index].Gain / trade.HoldLong[index].Price) * 100
+			trade.HoldLong[index].Gain = (trade.HoldLong[index].CurrentPrice - trade.HoldLong[index].Price) * float32(trade.HoldLong[index].Amount)
+			trade.HoldLong[index].GainP = (trade.HoldLong[index].Gain / (trade.HoldLong[index].Price * float32(trade.HoldLong[index].Amount))) * 100
 
 			trade.AccountValue += trade.HoldLong[index].CurrentPrice * float32(trade.HoldLong[index].Amount)
 			readyChan <- 0
@@ -50,8 +50,8 @@ func GetPortfolio(email string) (models.Trades, error) {
 			}
 
 			trade.HoldShort[index].CurrentPrice = q.GetC()
-			trade.HoldShort[index].Gain = trade.HoldShort[index].Price - trade.HoldShort[index].CurrentPrice
-			trade.HoldShort[index].GainP = (trade.HoldShort[index].Gain / trade.HoldShort[index].Price) * 100
+			trade.HoldShort[index].Gain = (trade.HoldShort[index].Price - trade.HoldShort[index].CurrentPrice) * float32(trade.HoldShort[index].Amount)
+			trade.HoldShort[index].GainP = (trade.HoldShort[index].Gain / (trade.HoldShort[index].Price * float32(trade.HoldShort[index].Amount))) * 100
 
 			trade.AccountValue -= trade.HoldShort[index].CurrentPrice * float32(trade.HoldShort[index].Amount)
 
