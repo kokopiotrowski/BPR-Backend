@@ -6,6 +6,7 @@ type Statistics struct {
 	AccountValue      []AccountValueStatus      `json:"accountValue"`
 	OwnedStocksAmount []OwnedStocksAmountStatus `json:"ownedStocksAmount"`
 	HoldStocks        []HoldStocksStatus        `json:"holdStocks"`
+	TotalGain         []TotalGain               `json:"totalGain"`
 }
 
 type CreditsStatus struct {
@@ -27,4 +28,9 @@ type HoldStocksStatus struct {
 	Date   string      `json:"d"`
 	HLong  []HoldLong  `json:"holdLong"`
 	HShort []HoldShort `json:"holdShort"`
+}
+
+type TotalGain struct {
+	Date string  `json:"d"`
+	Gain float32 `json:"gain"`
 }

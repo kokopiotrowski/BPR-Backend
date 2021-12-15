@@ -123,7 +123,7 @@ func TrackRanking() {
 
 func sortPopularSymbols(stocks []models.MostPopularStock) []models.MostPopularStock {
 	for i := 0; i < len(stocks)-1; i++ {
-		if stocks[i].Amount > stocks[i+1].Amount {
+		if stocks[i].Amount < stocks[i+1].Amount {
 			stocks[i], stocks[i+1] = stocks[i+1], stocks[i]
 		}
 	}
@@ -137,7 +137,7 @@ func GetRanking() (models.Rankings, error) {
 		return models.Rankings{}, reserr.Internal("error", err, "Failed to retrieve rankings from database")
 	}
 
-	dt := time.Now().In(loc)
+	dt := time.Now().In(loc).AddDate(0, 0, -1)
 
 	currentDate := dt.Format("02-01-2006")
 

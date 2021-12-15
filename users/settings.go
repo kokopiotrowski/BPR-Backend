@@ -5,6 +5,7 @@ import (
 	"stockx-backend/auth"
 	"stockx-backend/db"
 	"stockx-backend/reserr"
+	"time"
 )
 
 type UserSettings struct {
@@ -65,21 +66,34 @@ func GetUser(email string) (UserSettings, error) {
 func ChangePassword(email string, model UpdatedPassword) error {
 	user, err := db.GetUserFromTable(email)
 	if err != nil {
-		return err
+		return reserr.Internal("error", err, "Failed to change password")
 	}
 
 	if !auth.ComparePasswords(user.Password, []byte(model.OldPassword)) {
-		return errors.New("invalid password")
+		return reserr.Forbidden("error", errors.New("failed to change password - incorrect old password"), "Incorrect old password")
 	}
 
 	newHashedPass, err := auth.HashPassword(model.NewPassword)
 	if err != nil {
-		return err
+		return reserr.Internal("error", err, "Failed to change password")
 	}
 
-	err = db.UpdateUsersPassword(email, newHashedPass)
+	loc, err := time.LoadLocation("Europe/Copenhagen")
+	if err != nil {
+		return reserr.Internal("error", err, "Failed to change password")
+	}
 
-	return err
+	dt := time.Now().In(loc)
+
+	user.DateLastAccessed = dt.Format("01-02-2006 15:04:05")
+	user.Password = newHashedPass
+
+	err = db.PutUserInTheTable(user)
+	if err != nil {
+		return reserr.Internal("error", err, "Failed to change password")
+	}
+
+	return nil
 }
 
 func ConfirmUserAccount(token string) (string, error) {

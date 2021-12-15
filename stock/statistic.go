@@ -53,10 +53,22 @@ func GetStatisticsForUser(email string) ([]ReturnStatTable, error) {
 		amountOwnedStockTable.Y = append(amountOwnedStockTable.Y, float32(ownedStockAm.Amount))
 	}
 
+	totalGainLossTable := ReturnStatTable{
+		Name: "Total gain/loss",
+		X:    []string{},
+		Y:    []float32{},
+	}
+
+	for _, gain := range stats.TotalGain {
+		totalGainLossTable.X = append(amountOwnedStockTable.X, gain.Date)
+		totalGainLossTable.Y = append(amountOwnedStockTable.Y, gain.Gain)
+	}
+
 	return []ReturnStatTable{
 		accountValueTable,
 		creditsTable,
 		amountOwnedStockTable,
+		totalGainLossTable,
 	}, nil
 }
 
@@ -78,11 +90,11 @@ func TrackStatistics() {
 	}
 
 	for _, email := range listOfUsers.Users {
-		trades, err := GetPortfolio(email)
+		portfolio, err := GetPortfolio(email)
 		for err != nil {
 			time.Sleep(1 * time.Second)
 
-			trades, err = GetPortfolio(email)
+			portfolio, err = GetPortfolio(email)
 		}
 
 		statistics, err := db.GetStatisticsFromTableForUser(email)
@@ -94,21 +106,21 @@ func TrackStatistics() {
 
 		statistics.AccountValue = append(statistics.AccountValue, models.AccountValueStatus{
 			Date:        currentDate,
-			AcountValue: trades.AccountValue,
+			AcountValue: portfolio.AccountValue,
 		})
 
 		statistics.Credits = append(statistics.Credits, models.CreditsStatus{
 			Date:    currentDate,
-			Credits: trades.Credits,
+			Credits: portfolio.Credits,
 		})
 
 		amountOfOwnedStocks := int64(0)
 
-		for _, hl := range trades.HoldLong {
+		for _, hl := range portfolio.HoldLong {
 			amountOfOwnedStocks += hl.Amount
 		}
 
-		for _, hs := range trades.HoldShort {
+		for _, hs := range portfolio.HoldShort {
 			amountOfOwnedStocks += hs.Amount
 		}
 
@@ -119,8 +131,23 @@ func TrackStatistics() {
 
 		statistics.HoldStocks = append(statistics.HoldStocks, models.HoldStocksStatus{
 			Date:   currentDate,
-			HLong:  trades.HoldLong,
-			HShort: trades.HoldShort,
+			HLong:  portfolio.HoldLong,
+			HShort: portfolio.HoldShort,
+		})
+
+		totalGain := float32(0)
+
+		for _, hs := range portfolio.HoldShort {
+			totalGain += hs.Gain
+		}
+
+		for _, hl := range portfolio.HoldLong {
+			totalGain += hl.Gain
+		}
+
+		statistics.TotalGain = append(statistics.TotalGain, models.TotalGain{
+			Date: currentDate,
+			Gain: totalGain,
 		})
 
 		err = db.PutStatisticsInTheTable(email, statistics)

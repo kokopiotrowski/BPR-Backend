@@ -65,7 +65,7 @@ func RegisterUser(register Register) (bool, error) {
 		Email:       register.Email,
 		Username:    register.Username,
 		Password:    hashedPass,
-		DateCreated: dt.Format("01-02-2006 15:04:05"),
+		DateCreated: dt.Format("02-01-2006 15:04:05"),
 		IsAdmin:     false,
 		IsConfirmed: false,
 	}
@@ -122,7 +122,6 @@ func RegisterUser(register Register) (bool, error) {
 
 func LogIn(login Credentials) (Token, error) {
 	user, err := db.GetUserFromTable(login.Email)
-
 	if err != nil {
 		return Token{}, err
 	}
@@ -137,11 +136,25 @@ func LogIn(login Credentials) (Token, error) {
 
 	token, err := CreateToken(user.Email, user.IsAdmin)
 	if err != nil {
-		return Token{}, errors.New("could not generate token")
+		return Token{}, reserr.Internal("error", err, "Failed to Login - try again later")
 	}
 
 	returnToken := Token{
 		Token: token,
+	}
+
+	loc, err := time.LoadLocation("Europe/Copenhagen")
+	if err != nil {
+		return Token{}, reserr.Internal("error", err, "Failed to Login - try again later")
+	}
+
+	dt := time.Now().In(loc)
+
+	user.DateLastAccessed = dt.Format("01-02-2006 15:04:05")
+
+	err = db.PutUserInTheTable(user)
+	if err != nil {
+		return Token{}, reserr.Internal("error", err, "Failed to Login - try again later")
 	}
 
 	return returnToken, nil
