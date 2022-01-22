@@ -100,7 +100,7 @@ func TrackStatistics() {
 
 		statistics, err := db.GetStatisticsFromTableForUser(email)
 		for err != nil {
-			time.Sleep(1 * time.Second)
+			time.Sleep(30 * time.Second)
 
 			statistics, err = db.GetStatisticsFromTableForUser(email)
 		}

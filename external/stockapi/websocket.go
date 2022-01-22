@@ -170,7 +170,6 @@ func ReloadStockInfo() {
 			}(s, ready)
 		}
 
-		//waiting for all requests to be ready
 		for _, s := range symbols {
 			if <-ready != 0 {
 				fmt.Printf("retrieving stock data for websocket failed %v", s)

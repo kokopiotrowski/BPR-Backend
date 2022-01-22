@@ -17,12 +17,12 @@ func Start() error {
 
 	cronRunner := cron.New(cron.WithLocation(loc))
 
-	_, err = cronRunner.AddFunc("0 16 * * 1-5", stock.TrackStatistics)
+	_, err = cronRunner.AddFunc("0 16 * * 1-5", stock.TrackStatistics) // every weekday at 4pm
 	if err != nil {
 		return err
 	}
 
-	_, err = cronRunner.AddFunc("0 17 * * 1-5", users.TrackRanking)
+	_, err = cronRunner.AddFunc("0 17 * * 1-5", users.TrackRanking) // every weekday at 5pm
 	if err != nil {
 		return err
 	}
