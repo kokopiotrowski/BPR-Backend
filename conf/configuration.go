@@ -17,7 +17,7 @@ type ServerConfigurations struct {
 	DevPort        string `yaml:"devPort"`
 	SSLKey         string `yaml:"sslkey"`
 	SSLCertificate string `yaml:"sslcert"`
-	EncodingVerKey string `yaml:"verkey"`
+	VerKey         string `yaml:"verkey"`
 }
 
 type EmailConfigurations struct {
@@ -30,7 +30,7 @@ type StockAPIConfigurations struct {
 }
 
 var (
-	Conf Configurations
+	Conf *Configurations
 )
 
 func ReadConfig() (*Configurations, error) {
@@ -56,7 +56,7 @@ func ReadConfig() (*Configurations, error) {
 	// Reading variables using the model
 	fmt.Println("Configuration read.")
 
-	Conf = configuration
+	Conf = &configuration
 
 	return &configuration, nil
 }

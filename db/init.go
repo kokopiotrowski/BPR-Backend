@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
-func InitDB(isProd bool) {
+func ListAvailableTables(isProd bool) {
 	names := listCreatedTables()
 	fmt.Println(names)
 }

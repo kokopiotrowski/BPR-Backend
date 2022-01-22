@@ -9,7 +9,7 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-func StartSteve() error {
+func Start() error {
 	loc, err := time.LoadLocation("America/New_York")
 	if err != nil {
 		return err

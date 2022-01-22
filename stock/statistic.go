@@ -2,6 +2,7 @@ package stock
 
 import (
 	"fmt"
+	"log"
 	"stockx-backend/db"
 	"stockx-backend/db/models"
 	"stockx-backend/reserr"
@@ -73,7 +74,7 @@ func GetStatisticsForUser(email string) ([]ReturnStatTable, error) {
 }
 
 func TrackStatistics() {
-	fmt.Println("Collecting statistics...")
+	log.Println("Collecting statistics...")
 
 	loc, err := time.LoadLocation("Europe/Copenhagen")
 	if err != nil {
@@ -92,7 +93,7 @@ func TrackStatistics() {
 	for _, email := range listOfUsers.Users {
 		portfolio, err := GetPortfolio(email)
 		for err != nil {
-			time.Sleep(1 * time.Second)
+			time.Sleep(30 * time.Second)
 
 			portfolio, err = GetPortfolio(email)
 		}

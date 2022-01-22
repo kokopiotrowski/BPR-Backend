@@ -14,6 +14,7 @@ type User struct {
 type Trades struct {
 	Email         string          `json:"email"`
 	Credits       float32         `json:"credits"`
+	BuyingPower   float32         `json:"buyingPower"`
 	AccountValue  float32         `json:"accountValue"`  // credits + value of current held stocks
 	BoughtStocks  []BoughtStock   `json:"boughtStocks"`  // buy long
 	SoldStocks    []SoldStock     `json:"soldStocks"`    // sell long

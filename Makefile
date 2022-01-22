@@ -7,7 +7,7 @@ build:
 	GOARCH=amd64 GOOS=windows go build -o ${BINARY_NAME}-windows main.go
 
 run:
-	./${BINARY_NAME}
+	./${BINARY_NAME}-linux
 
 build_and_run: build run
 

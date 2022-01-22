@@ -25,7 +25,7 @@ func BuyStock(email string, item models.BoughtStock) error {
 	}
 
 	if trades.Credits < *stock.C*float32(item.Amount) {
-		return reserr.BadRequest("info", errors.New("not enough credits to buyt stocks"), "Not enough credits to buy stocks")
+		return reserr.BadRequest("info", errors.New("not enough credits to buy stocks"), "Not enough of credits to buy so many stocks")
 	}
 
 	item.Price = *stock.C
@@ -83,6 +83,10 @@ func ShortStock(email string, item models.ShortStock) error {
 	stock, err := stockapi.GetQuoteForSymbol(item.Symbol)
 	if err != nil {
 		return reserr.Internal("error", err, "Failed to get information about the stock")
+	}
+
+	if trades.Credits < *stock.C*float32(item.Amount) {
+		return reserr.BadRequest("info", errors.New("not enough of buying power to make purchase"), "Not enough of credits to short so many stocks")
 	}
 
 	item.Price = *stock.C
@@ -236,4 +240,14 @@ func BuyToCover(email string, item models.BoughtToCover) error {
 	err = db.PutTradesInTheTable(email, trades)
 
 	return err
+}
+
+func calcBuyingPower(trade *models.Trades) {
+	buyingPower := trade.Credits
+
+	for _, hs := range trade.HoldShort {
+		buyingPower -= 1.5 * hs.Price
+	}
+
+	trade.BuyingPower = buyingPower
 }

@@ -16,6 +16,8 @@ func GetPortfolio(email string) (models.Trades, error) {
 
 	readyChan := make(chan int)
 
+	calcBuyingPower(&trade)
+
 	trade.AccountValue = trade.Credits
 
 	for i := 0; i < len(trade.HoldLong); i++ {
@@ -37,7 +39,7 @@ func GetPortfolio(email string) (models.Trades, error) {
 
 	for i := 0; i < len(trade.HoldLong); i++ {
 		if <-readyChan == 1 {
-			return models.Trades{}, reserr.Internal("External api fail", errors.New("failed to retrieve data from external api"), "Failed to retrieve portfolio from server")
+			return models.Trades{}, reserr.Internal("error", errors.New("failed to retrieve data from external api"), "Failed to retrieve portfolio from server")
 		}
 	}
 
@@ -61,7 +63,7 @@ func GetPortfolio(email string) (models.Trades, error) {
 
 	for i := 0; i < len(trade.HoldShort); i++ {
 		if <-readyChan == 1 {
-			return models.Trades{}, reserr.Internal("External api fail", errors.New("failed to retrieve data from external api"), "Failed to retrieve portfolio from server")
+			return models.Trades{}, reserr.Internal("error", errors.New("failed to retrieve data from external api"), "Failed to retrieve portfolio from server")
 		}
 	}
 

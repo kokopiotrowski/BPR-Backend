@@ -65,9 +65,20 @@ func RegisterUser(register Register) (bool, error) {
 		Email:       register.Email,
 		Username:    register.Username,
 		Password:    hashedPass,
-		DateCreated: dt.Format("02-01-2006 15:04:05"),
+		DateCreated: dt.Format("01-02-2006 15:04:05"),
 		IsAdmin:     false,
 		IsConfirmed: false,
+	}
+
+	listOfRegisteredEmails, err := db.GetListOfRegisteredUsers()
+	if err != nil {
+		return false, reserr.Internal("error", err, "failed to save newly registered user in database")
+	}
+
+	for _, email := range listOfRegisteredEmails.Users {
+		if newUser.Email == email {
+			return false, reserr.Internal("error", errors.New("user with given email already exists"), "User with provided email already exists")
+		}
 	}
 
 	err = db.PutUserInTheTable(newUser)
@@ -96,14 +107,9 @@ func RegisterUser(register Register) (bool, error) {
 		return false, reserr.Internal("error", err, "failed to begin tracking statistics for newly registered user in database")
 	}
 
-	registeredUsers, err := db.GetListOfRegisteredUsers()
-	if err != nil {
-		return false, reserr.Internal("error", err, "Failed to add user to list of users")
-	}
+	listOfRegisteredEmails.Users = append(listOfRegisteredEmails.Users, newUser.Email)
 
-	registeredUsers.Users = append(registeredUsers.Users, newUser.Email)
-
-	err = db.PutListOfRegisteredUsersInTheTable(registeredUsers)
+	err = db.PutListOfRegisteredUsersInTheTable(listOfRegisteredEmails)
 	if err != nil {
 		return false, reserr.Internal("error", err, "Failed to add user to list of users")
 	}
@@ -124,6 +130,10 @@ func LogIn(login Credentials) (Token, error) {
 	user, err := db.GetUserFromTable(login.Email)
 	if err != nil {
 		return Token{}, err
+	}
+
+	if user.DateCreated == "" {
+		return Token{}, reserr.Forbidden("error", errors.New("failed to login - user does not exists"), "User account does not exist!")
 	}
 
 	if !user.IsConfirmed {
@@ -213,7 +223,7 @@ func CreateToken(email string, isAdmin bool) (string, error) {
 
 	atClaims["exp"] = time.Now().Add(time.Minute * 300).Unix()
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-	token, err := at.SignedString([]byte(conf.Conf.Server.EncodingVerKey))
+	token, err := at.SignedString([]byte(conf.Conf.Server.VerKey))
 
 	if err != nil {
 		return "", err
@@ -230,7 +240,7 @@ func generateConfirmationToken(email string) (string, error) {
 
 	atClaims["exp"] = time.Now().Add(time.Minute * 300).Unix()
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-	token, err := at.SignedString([]byte(conf.Conf.Server.EncodingVerKey))
+	token, err := at.SignedString([]byte(conf.Conf.Server.VerKey))
 
 	if err != nil {
 		return "", err
@@ -242,7 +252,7 @@ func generateConfirmationToken(email string) (string, error) {
 func ExtractEmailFromConfirmationToken(token string) (string, error) {
 	claims := jwt.MapClaims{}
 	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(conf.Conf.Server.EncodingVerKey), nil
+		return []byte(conf.Conf.Server.VerKey), nil
 	})
 
 	if err != nil {
@@ -271,7 +281,7 @@ func VerifyToken(r *http.Request) (*jwt.Token, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(conf.Conf.Server.EncodingVerKey), nil
+		return []byte(conf.Conf.Server.VerKey), nil
 	})
 
 	if err != nil {
@@ -290,7 +300,7 @@ func GetEmailFromToken(r *http.Request) (string, error) {
 	tokenString := ExtractToken(r)
 	claims := jwt.MapClaims{}
 	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(conf.Conf.Server.EncodingVerKey), nil
+		return []byte(conf.Conf.Server.VerKey), nil
 	})
 
 	if err != nil {
@@ -304,12 +314,22 @@ func CheckIfAdmin(r *http.Request) (bool, error) {
 	tokenString := ExtractToken(r)
 	claims := jwt.MapClaims{}
 	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(conf.Conf.Server.EncodingVerKey), nil
+		return []byte(conf.Conf.Server.VerKey), nil
 	})
 
 	if err != nil {
 		return false, err
 	}
 
-	return claims["admin"].(bool), nil
+	email, err := GetEmailFromToken(r)
+	if err != nil {
+		return false, err
+	}
+
+	user, err := db.GetUserFromTable(email)
+	if err != nil {
+		return false, err
+	}
+
+	return user.IsAdmin && claims["admin"].(bool), nil
 }
