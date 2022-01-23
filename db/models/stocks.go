@@ -1,6 +1,5 @@
 package models
 
-
 type BoughtStock struct {
 	Symbol string  `json:"s"`
 	Amount int64   `json:"am"`
@@ -51,5 +50,3 @@ type HoldStocks struct {
 	HoldLong  []HoldLong  `json:"holdLong"`  // long stocks currently held by user
 	HoldShort []HoldShort `json:"holdShort"` // short stocks currently held by user
 }
-
-

@@ -19,6 +19,8 @@ func BuyStock(email string, item models.BoughtStock) error {
 		return err
 	}
 
+	calcBuyingPower(&trades)
+
 	stock, err := stockapi.GetQuoteForSymbol(item.Symbol)
 	if err != nil {
 		return reserr.Internal("error", err, "Failed to get information about the stock")
@@ -26,6 +28,10 @@ func BuyStock(email string, item models.BoughtStock) error {
 
 	if trades.Credits < *stock.C*float32(item.Amount) {
 		return reserr.BadRequest("info", errors.New("not enough credits to buy stocks"), "Not enough of credits to buy so many stocks")
+	}
+
+	if trades.BuyingPower < *stock.C*float32(item.Amount) {
+		return reserr.BadRequest("info", errors.New("too small buying power to buy stocks"), "Buying power too small to buy so many stocks")
 	}
 
 	item.Price = *stock.C
@@ -80,13 +86,15 @@ func ShortStock(email string, item models.ShortStock) error {
 		return err
 	}
 
+	calcBuyingPower(&trades)
+
 	stock, err := stockapi.GetQuoteForSymbol(item.Symbol)
 	if err != nil {
 		return reserr.Internal("error", err, "Failed to get information about the stock")
 	}
 
-	if trades.Credits < *stock.C*float32(item.Amount) {
-		return reserr.BadRequest("info", errors.New("not enough of buying power to make purchase"), "Not enough of credits to short so many stocks")
+	if trades.BuyingPower < *stock.C*float32(item.Amount) {
+		return reserr.BadRequest("info", errors.New("too small buying power to buy stocks"), "Buying power too small to buy so many stocks")
 	}
 
 	item.Price = *stock.C
@@ -200,6 +208,10 @@ func BuyToCover(email string, item models.BoughtToCover) error {
 		return reserr.Internal("error", err, "Failed to get information about the stock")
 	}
 
+	if trades.Credits < *stock.C*float32(item.Amount) {
+		return reserr.BadRequest("info", errors.New("not enough credits to buy to cover"), "Not enough of credits to cover shorted stocks")
+	}
+
 	amount := item.Amount
 
 	for i := len(trades.HoldShort) - 1; i >= 0; i-- {
@@ -242,7 +254,7 @@ func BuyToCover(email string, item models.BoughtToCover) error {
 	return err
 }
 
-func calcBuyingPower(trade *models.Trades) {
+func calcBuyingPower(trade *models.Trades) float32 {
 	buyingPower := trade.Credits
 
 	for _, hs := range trade.HoldShort {
@@ -250,4 +262,6 @@ func calcBuyingPower(trade *models.Trades) {
 	}
 
 	trade.BuyingPower = buyingPower
+
+	return buyingPower
 }

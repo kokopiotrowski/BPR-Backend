@@ -36,6 +36,7 @@ func GetSymbolInfo(email, symbol string) (stockapi.SymbolInfo, error) {
 	}
 
 	symbolInfo.Credits = trades.Credits
+	symbolInfo.BuyingPower = calcBuyingPower(&trades)
 
 	return symbolInfo, nil
 }
